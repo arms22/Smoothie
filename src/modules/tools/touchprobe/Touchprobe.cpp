@@ -96,7 +96,7 @@ void Touchprobe::on_gcode_received(void* argument)
     Gcode* gcode = static_cast<Gcode*>(argument);
     Robot* robot = THEKERNEL->robot;
 
-    if( gcode->has_g) {
+    if( gcode->has_g()) {
         if( gcode->g == 31 ) {
             float tmp[3], pos[3], mm[3];
             int steps[3];
@@ -104,15 +104,24 @@ void Touchprobe::on_gcode_received(void* argument)
             THEKERNEL->conveyor->wait_for_empty_queue();
 
             robot->get_axis_position(pos);
-            for(char c = 'X'; c <= 'Z'; c++){
-                if( gcode->has_letter(c) ){
-                    tmp[c-'X'] = robot->to_millimeters(gcode->get_value(c)) - ( robot->absolute_mode ? pos[c-'X'] : 0 );
-                }else{
-                    tmp[c-'X'] = 0;
-                }
+
+            if( gcode->has_x() ){
+                tmp[X_AXIS] = robot->to_millimeters(gcode->x) - ( robot->absolute_mode ? pos[X_AXIS] : 0 );
+            }else{
+                tmp[X_AXIS] = 0;
             }
-            if( gcode->has_letter('F') )            {
-                this->probe_rate = robot->to_millimeters( gcode->get_value('F') ) / robot->seconds_per_minute;
+            if( gcode->has_y() ){
+                tmp[Y_AXIS] = robot->to_millimeters(gcode->y) - ( robot->absolute_mode ? pos[Y_AXIS] : 0 );
+                }else{
+                tmp[Y_AXIS] = 0;
+                }
+            if( gcode->has_z() ){
+                tmp[Z_AXIS] = robot->to_millimeters(gcode->z) - ( robot->absolute_mode ? pos[Z_AXIS] : 0 );
+            }else{
+                tmp[Z_AXIS] = 0;
+            }
+            if( gcode->has_f() ){
+                this->probe_rate = robot->to_millimeters( gcode->f ) / robot->seconds_per_minute;
             }
             robot->arm_solution->cartesian_to_actuator(tmp, mm);
             for (int c = 0; c < 3; c++)
@@ -148,7 +157,7 @@ void Touchprobe::on_gcode_received(void* argument)
                 flush_log();
             }
         }
-    }else if(gcode->has_m) {
+    }else if(gcode->has_m()) {
         // log rotation
         // for now this only writes a separator
         // TODO do a actual log rotation

@@ -16,7 +16,7 @@ using std::string;
 
 // This is a gcode object. It reprensents a GCode string/command, an caches some important values about that command for the sake of performance.
 // It gets passed around in events, and attached to the queue ( that'll change )
-Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), add_nl(false), stream(stream) {
+Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), x(.0F), y(.0F), z(.0F), e(.0F), f(.0F), add_nl(false), stream(stream) {
     prepare_cached_values();
     this->millimeters_of_travel = 0.0F;
     this->accepted_by_module=false;
@@ -25,10 +25,14 @@ Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(
 Gcode::Gcode(const Gcode& to_copy){
     this->command.assign( to_copy.command );
     this->millimeters_of_travel = to_copy.millimeters_of_travel;
-    this->has_m                 = to_copy.has_m;
-    this->has_g                 = to_copy.has_g;
+    this->f_has_letter          = to_copy.f_has_letter;
     this->m                     = to_copy.m;
     this->g                     = to_copy.g;
+    this->x                     = to_copy.x;
+    this->y                     = to_copy.y;
+    this->z                     = to_copy.z;
+    this->e                     = to_copy.e;
+    this->f                     = to_copy.f;
     this->add_nl                = to_copy.add_nl;
     this->stream                = to_copy.stream;
     this->accepted_by_module=false;
@@ -39,28 +43,20 @@ Gcode& Gcode::operator= (const Gcode& to_copy){
     if( this != &to_copy ){
         this->command.assign( to_copy.command );
         this->millimeters_of_travel = to_copy.millimeters_of_travel;
-        this->has_m                 = to_copy.has_m;
-        this->has_g                 = to_copy.has_g;
+        this->f_has_letter          = to_copy.f_has_letter;
         this->m                     = to_copy.m;
         this->g                     = to_copy.g;
+        this->x                     = to_copy.x;
+        this->y                     = to_copy.y;
+        this->z                     = to_copy.z;
+        this->e                     = to_copy.e;
+        this->f                     = to_copy.f;
         this->add_nl                = to_copy.add_nl;
         this->stream                = to_copy.stream;
         this->txt_after_ok.assign( to_copy.txt_after_ok );
     }
     this->accepted_by_module=false;
     return *this;
-}
-
-
-// Whether or not a Gcode has a letter
-bool Gcode::has_letter( char letter ){
-    //return ( this->command->find( letter ) != string::npos );
-    for (std::string::const_iterator c = this->command.cbegin(); c != this->command.cend(); c++) {
-        if( *c == letter ){
-            return true;
-        }
-    }
-    return false;
 }
 
 // Retrieve the value for a given letter
@@ -97,29 +93,50 @@ int Gcode::get_int( char letter )
 }
 
 int Gcode::get_num_args(){
-    int count = 0;
-    for(size_t i=1; i<this->command.length(); i++){
-        if( this->command.at(i) >= 'A' && this->command.at(i) <= 'Z' ){
-            count++;
+    int args = 0;
+    for( char c = 'A'; c <= 'Z'; c++ ){
+        if( c == 'G' ) continue;
+        if( c == 'M' ) continue;
+        if( f_has_letter & LETTER_BIT(c) ){
+            args++;
         }
     }
-    return count;
+    return args;
 }
 
 // Cache some of this command's properties, so we don't have to parse the string every time we want to look at them
 void Gcode::prepare_cached_values(){
-    if( this->has_letter('G') ){
-        this->has_g = true;
-        this->g = this->get_int('G');
-    }else{
-        this->has_g = false;
+    const char* cs = command.c_str();
+    char* cn;
+    char c;
+    do {
+        c = *cs++;
+        if( 'A' <= c && c <= 'Z' ){
+            f_has_letter |= LETTER_BIT(c);
+            if( c == 'G' ) {
+                this->g = strtol(cs, &cn, 10);
+                cs = cn;
+            }else if( c == 'M' ){
+                this->m = strtol(cs, &cn, 10);
+                cs = cn;
+            }else if( 'X' == c ){
+                this->x = strtof(cs, &cn);
+                cs = cn;
+            }else if( 'Y' == c ){
+                this->y = strtof(cs, &cn);
+                cs = cn;
+            }else if( 'Z' == c ){
+                this->z = strtof(cs, &cn);
+                cs = cn;
+            }else if( 'E' == c ){
+                this->e = strtof(cs, &cn);
+                cs = cn;
+            }else if( 'F' == c ){
+                this->f = strtof(cs, &cn);
+                cs = cn;
     }
-    if( this->has_letter('M') ){
-        this->has_m = true;
-        this->m = this->get_int('M');
-    }else{
-        this->has_m = false;
     }
+    } while( c != '\0' );
 }
 
 void Gcode::mark_as_taken(){

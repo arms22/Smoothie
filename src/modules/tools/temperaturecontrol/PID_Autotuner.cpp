@@ -86,7 +86,7 @@ void PID_Autotuner::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode *>(argument);
 
-    if ((gcode->has_m) && (gcode->m == 304))
+    if ((gcode->has_m()) && (gcode->m == 304))
         abort();
 }
 

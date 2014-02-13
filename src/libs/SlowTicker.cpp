@@ -146,7 +146,7 @@ void SlowTicker::on_idle(void*)
 void SlowTicker::on_gcode_received(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
     // Add the gcode to the queue ourselves if we need it
-    if( gcode->has_g && gcode->g == 4 ){
+    if( gcode->has_g() && gcode->g == 4 ){
         THEKERNEL->conveyor->append_gcode(gcode);
         // ensure that no subsequent gcodes get executed along with our G4
         THEKERNEL->conveyor->queue_head_block();
@@ -157,7 +157,7 @@ void SlowTicker::on_gcode_received(void* argument){
 void SlowTicker::on_gcode_execute(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
 
-    if (gcode->has_g){
+    if (gcode->has_g()){
         if (gcode->g == 4){
             gcode->mark_as_taken();
             bool updated = false;

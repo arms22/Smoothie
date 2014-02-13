@@ -142,7 +142,7 @@ void SimpleShell::on_gcode_received(void *argument)
     Gcode *gcode = static_cast<Gcode *>(argument);
     string args= get_arguments(gcode->command);
 
-    if (gcode->has_m) {
+    if (gcode->has_m()) {
         if (gcode->m == 20) { // list sd card
             gcode->mark_as_taken();
             gcode->stream->printf("Begin file list\r\n");

@@ -125,7 +125,7 @@ void TemperatureControl::on_config_reload(void* argument){
 
 void TemperatureControl::on_gcode_received(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
-    if (gcode->has_m) {
+    if (gcode->has_m()) {
         // Get temperature
         if( gcode->m == this->get_m_code ){
             char buf[32]; // should be big enough for any status
@@ -135,7 +135,7 @@ void TemperatureControl::on_gcode_received(void* argument){
 
         } else if (gcode->m == 301) {
             gcode->mark_as_taken();
-            if (gcode->has_letter('S') && (gcode->get_value('S') == this->pool_index))
+            if (gcode->has_letter('S') && (gcode->get_int('S') == this->pool_index))
             {
                 if (gcode->has_letter('P'))
                     setPIDp( gcode->get_value('P') );
@@ -143,14 +143,14 @@ void TemperatureControl::on_gcode_received(void* argument){
                     setPIDi( gcode->get_value('I') );
                 if (gcode->has_letter('D'))
                     setPIDd( gcode->get_value('D') );
-                if (gcode->has_letter('X'))
-                    this->i_max    = gcode->get_value('X');
+                if (gcode->has_x())
+                    this->i_max    = gcode->x;
             }
             //gcode->stream->printf("%s(S%d): Pf:%g If:%g Df:%g X(I_max):%g Pv:%g Iv:%g Dv:%g O:%d\n", this->designator.c_str(), this->pool_index, this->p_factor, this->i_factor/this->PIDdt, this->d_factor*this->PIDdt, this->i_max, this->p, this->i, this->d, o);
             gcode->stream->printf("%s(S%d): Pf:%g If:%g Df:%g X(I_max):%g O:%d\n", this->designator.c_str(), this->pool_index, this->p_factor, this->i_factor/this->PIDdt, this->d_factor*this->PIDdt, this->i_max, o);
 
         } else if (gcode->m == 303) {
-            if (gcode->has_letter('E') && (gcode->get_value('E') == this->pool_index)) {
+            if (gcode->has_e() && (gcode->get_int('E') == this->pool_index)) {
                 gcode->mark_as_taken();
                 float target = 150.0;
                 if (gcode->has_letter('S')) {
@@ -183,7 +183,7 @@ void TemperatureControl::on_gcode_received(void* argument){
 
 void TemperatureControl::on_gcode_execute(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
-    if( gcode->has_m){
+    if( gcode->has_m()){
         if (((gcode->m == this->set_m_code) || (gcode->m == this->set_and_wait_m_code))
             && gcode->has_letter('S'))
         {

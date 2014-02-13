@@ -70,7 +70,7 @@ void CurrentControl::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode*>(argument);
     char alpha[8] = { 'X', 'Y', 'Z', 'E', 'A', 'B', 'C', 'D' };
-    if (gcode->has_m)
+    if (gcode->has_m())
     {
         if (gcode->m == 907)
         {
