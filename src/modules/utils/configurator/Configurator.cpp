@@ -44,13 +44,13 @@ void Configurator::on_console_line_received( void* argument ){
 // Process and respond to eeprom gcodes (M50x)
 void Configurator::on_gcode_received(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
-    if( gcode->has_letter('G') ){
-        int code = gcode->get_value('G');
+    if( gcode->has_g() ){
+        int code = gcode->g;
         switch( code ){
         }
     }
-    else if( gcode->has_letter('M') ){
-        int code = gcode->get_value('M');
+    else if( gcode->has_m() ){
+        int code = gcode->m;
         switch( code ){
         }
     }

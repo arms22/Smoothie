@@ -107,10 +107,10 @@ try_again:
                     //Prepare gcode for dispatch
                     Gcode *gcode = new Gcode(single_command, new_message.stream);
 
-                    if(gcode->has_g) {
+                    if(gcode->has_g()) {
                         last_g= gcode->g;
                     }
-                    if(gcode->has_m) {
+                    if(gcode->has_m()) {
                         switch (gcode->m) {
                             case 28: // start upload command
                                 delete gcode;
