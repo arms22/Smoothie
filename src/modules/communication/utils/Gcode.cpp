@@ -113,10 +113,10 @@ void Gcode::prepare_cached_values(){
         c = *cs++;
         if( 'A' <= c && c <= 'Z' ){
             f_has_letter |= LETTER_BIT(c);
-            if( c == 'G' ) {
+            if( 'G' == c ) {
                 this->g = strtol(cs, &cn, 10);
                 cs = cn;
-            }else if( c == 'M' ){
+            }else if( 'M' == c ){
                 this->m = strtol(cs, &cn, 10);
                 cs = cn;
             }else if( 'X' == c ){
