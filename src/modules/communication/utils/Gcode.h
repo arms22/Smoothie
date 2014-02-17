@@ -32,28 +32,28 @@ class Gcode {
         #define LETTER_BIT(letter) (1 << ((letter) - 'A'))
 
         inline bool has_letter(char c) const {
-          return f_has_letter & LETTER_BIT(c);
+          return (f_has_letter & LETTER_BIT( c ) != 0);
         }
         inline bool has_g() const {
-          return f_has_letter & LETTER_BIT('G');
+          return (f_has_letter & LETTER_BIT('G') != 0);
         }
         inline bool has_m() const {
-          return f_has_letter & LETTER_BIT('M');
+          return (f_has_letter & LETTER_BIT('M') != 0);
         }
         inline bool has_x() const {
-          return f_has_letter & LETTER_BIT('X');
+          return (f_has_letter & LETTER_BIT('X') != 0);
         }
         inline bool has_y() const {
-          return f_has_letter & LETTER_BIT('Y');
+          return (f_has_letter & LETTER_BIT('Y') != 0);
         }
         inline bool has_z() const {
-          return f_has_letter & LETTER_BIT('Z');
+          return (f_has_letter & LETTER_BIT('Z') != 0);
         }
         inline bool has_e() const {
-          return f_has_letter & LETTER_BIT('E');
+          return (f_has_letter & LETTER_BIT('E') != 0);
         }
         inline bool has_f() const {
-          return f_has_letter & LETTER_BIT('F');
+          return (f_has_letter & LETTER_BIT('F') != 0);
         }
         unsigned int f_has_letter;
 

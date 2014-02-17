@@ -16,7 +16,7 @@ using std::string;
 
 // This is a gcode object. It reprensents a GCode string/command, an caches some important values about that command for the sake of performance.
 // It gets passed around in events, and attached to the queue ( that'll change )
-Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), x(.0F), y(.0F), z(.0F), e(.0F), f(.0F), add_nl(false), stream(stream) {
+Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), x(0), y(0), z(0), e(0), f(0), add_nl(false), stream(stream) {
     prepare_cached_values();
     this->millimeters_of_travel = 0.0F;
     this->accepted_by_module=false;
@@ -97,7 +97,7 @@ int Gcode::get_num_args(){
     for( char c = 'A'; c <= 'Z'; c++ ){
         if( c == 'G' ) continue;
         if( c == 'M' ) continue;
-        if( f_has_letter & LETTER_BIT(c) ){
+        if( has_letter(c) ){
             args++;
         }
     }
@@ -134,8 +134,8 @@ void Gcode::prepare_cached_values(){
             }else if( 'F' == c ){
                 this->f = strtof(cs, &cn);
                 cs = cn;
-    }
-    }
+            }
+        }
     } while( c != '\0' );
 }
 
