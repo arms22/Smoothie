@@ -112,16 +112,16 @@ void Touchprobe::on_gcode_received(void* argument)
             }
             if( gcode->has_y() ){
                 tmp[Y_AXIS] = robot->to_millimeters(gcode->y) - ( robot->absolute_mode ? pos[Y_AXIS] : 0 );
-                }else{
+            }else{
                 tmp[Y_AXIS] = 0;
-                }
+            }
             if( gcode->has_z() ){
                 tmp[Z_AXIS] = robot->to_millimeters(gcode->z) - ( robot->absolute_mode ? pos[Z_AXIS] : 0 );
             }else{
                 tmp[Z_AXIS] = 0;
             }
             if( gcode->has_f() ){
-                this->probe_rate = robot->to_millimeters( gcode->f ) / robot->seconds_per_minute;
+                this->probe_rate = robot->to_millimeters(gcode->f) / robot->seconds_per_minute;
             }
             robot->arm_solution->cartesian_to_actuator(tmp, mm);
             for (int c = 0; c < 3; c++)
