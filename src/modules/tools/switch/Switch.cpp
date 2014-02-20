@@ -84,20 +84,20 @@ void Switch::on_config_reload(void* argument){
 
     if(!input_on_command.empty()) {
         Gcode gc(input_on_command, NULL);
-        if(gc.has_g){
+        if(gc.has_g()){
             input_on_command_letter= 'G';
             input_on_command_code= gc.g;
-        } else if(gc.has_m) {
+        } else if(gc.has_m()) {
             input_on_command_letter= 'M';
             input_on_command_code= gc.m;
         }
     }
     if(!input_off_command.empty()) {
         Gcode gc(input_off_command, NULL);
-        if(gc.has_g){
+        if(gc.has_g()){
             input_off_command_letter= 'G';
             input_off_command_code= gc.g;
-        } else if(gc.has_m) {
+        } else if(gc.has_m()) {
             input_off_command_letter= 'M';
             input_off_command_code= gc.m;
         }
@@ -106,13 +106,13 @@ void Switch::on_config_reload(void* argument){
 }
 
 bool Switch::match_input_gcode(const Gcode* gcode) const {
-    return ((input_on_command_letter  == 'M' && gcode->has_m && gcode->m == input_on_command_code) ||
-           (input_on_command_letter  == 'G' && gcode->has_g && gcode->g == input_on_command_code));
+    return ((input_on_command_letter  == 'M' && gcode->has_m() && gcode->m == input_on_command_code) ||
+           (input_on_command_letter  == 'G' && gcode->has_g() && gcode->g == input_on_command_code));
 }
 
 bool Switch::match_output_gcode(const Gcode* gcode) const {
-    return ((input_off_command_letter == 'M' && gcode->has_m && gcode->m == input_off_command_code) ||
-            (input_off_command_letter == 'G' && gcode->has_g && gcode->g == input_off_command_code));
+    return ((input_off_command_letter == 'M' && gcode->has_m() && gcode->m == input_off_command_code) ||
+            (input_off_command_letter == 'G' && gcode->has_g() && gcode->g == input_off_command_code));
 }
 
 void Switch::on_gcode_received(void* argument){

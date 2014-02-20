@@ -129,7 +129,7 @@ void Extruder::on_gcode_received(void *argument){
     Gcode *gcode = static_cast<Gcode*>(argument);
 
     // Gcodes to execute immediately
-    if (gcode->has_m){
+    if (gcode->has_m()){
         if (gcode->m == 114){
             gcode->stream->printf("E:%4.1f ", this->current_position);
             gcode->add_nl = true;
@@ -137,8 +137,8 @@ void Extruder::on_gcode_received(void *argument){
 
         }else if (gcode->m == 92 ){
             float spm = this->steps_per_millimeter;
-            if (gcode->has_letter('E'))
-                spm = gcode->get_value('E');
+            if (gcode->has_e())
+                spm = gcode->e;
             gcode->stream->printf("E:%g ", spm);
             gcode->add_nl = true;
             gcode->mark_as_taken();
@@ -151,13 +151,13 @@ void Extruder::on_gcode_received(void *argument){
     }
 
     // Gcodes to pass along to on_gcode_execute
-    if( ( gcode->has_m && (gcode->m == 17 || gcode->m == 18 || gcode->m == 82 || gcode->m == 83 || gcode->m == 84 || gcode->m == 92 ) ) || ( gcode->has_g && gcode->g == 92 && gcode->has_letter('E') ) || ( gcode->has_g && ( gcode->g == 90 || gcode->g == 91 ) ) ){
+    if( ( gcode->has_m() && (gcode->m == 17 || gcode->m == 18 || gcode->m == 82 || gcode->m == 83 || gcode->m == 84 || gcode->m == 92 ) ) || ( gcode->has_g() && gcode->g == 92 && gcode->has_e() ) || ( gcode->has_g() && ( gcode->g == 90 || gcode->g == 91 ) ) ){
         THEKERNEL->conveyor->append_gcode(gcode);
     }
 
     // Add to the queue for on_gcode_execute to process
-    if( gcode->has_g && gcode->g < 4 && gcode->has_letter('E') ){
-        if( !gcode->has_letter('X') && !gcode->has_letter('Y') && !gcode->has_letter('Z') ){
+    if( gcode->has_g() && gcode->g < 4 && gcode->has_e() ){
+        if( !gcode->has_x() && !gcode->has_y() && !gcode->has_z() ){
             THEKERNEL->conveyor->append_gcode(gcode);
             // This is a solo move, we add an empty block to the queue to prevent subsequent gcodes being executed at the same time
             THEKERNEL->conveyor->queue_head_block();
@@ -173,15 +173,15 @@ void Extruder::on_gcode_execute(void* argument){
     Gcode* gcode = static_cast<Gcode*>(argument);
 
     // Absolute/relative mode
-    if( gcode->has_m ){
+    if( gcode->has_m() ){
         if( gcode->m == 17 ){ this->en_pin.set(0); }
         if( gcode->m == 18 ){ this->en_pin.set(1); }
         if( gcode->m == 82 ){ this->absolute_mode = true; }
         if( gcode->m == 83 ){ this->absolute_mode = false; }
         if( gcode->m == 84 ){ this->en_pin.set(1); }
         if (gcode->m == 92 ){
-            if (gcode->has_letter('E')){
-                this->steps_per_millimeter = gcode->get_value('E');
+            if (gcode->has_e()){
+                this->steps_per_millimeter = gcode->e;
             }
         }
     }
@@ -189,12 +189,12 @@ void Extruder::on_gcode_execute(void* argument){
     // The mode is OFF by default, and SOLO or FOLLOW only if we need to extrude
     this->mode = OFF;
 
-    if( gcode->has_g ){
+    if( gcode->has_g() ){
         // G92: Reset extruder position
         if( gcode->g == 92 ){
             gcode->mark_as_taken();
-            if( gcode->has_letter('E') ){
-                this->current_position = gcode->get_value('E');
+            if( gcode->has_e() ){
+                this->current_position = gcode->e;
                 this->target_position  = this->current_position;
                 this->unstepped_distance = 0;
             }else if( gcode->get_num_args() == 0){
@@ -204,9 +204,9 @@ void Extruder::on_gcode_execute(void* argument){
             }
         }else if ((gcode->g == 0) || (gcode->g == 1)){
             // Extrusion length from 'G' Gcode
-            if( gcode->has_letter('E' )){
+            if( gcode->has_e()){
                 // Get relative extrusion distance depending on mode ( in absolute mode we must substract target_position )
-                float extrusion_distance = gcode->get_value('E');
+                float extrusion_distance = gcode->e;
                 float relative_extrusion_distance = extrusion_distance;
                 if (this->absolute_mode)
                 {
@@ -231,9 +231,9 @@ void Extruder::on_gcode_execute(void* argument){
 
                 this->en_pin.set(0);
             }
-            if (gcode->has_letter('F'))
+            if (gcode->has_f())
             {
-                feed_rate = gcode->get_value('F') / THEKERNEL->robot->seconds_per_minute;
+                feed_rate = gcode->f / THEKERNEL->robot->seconds_per_minute;
                 if (feed_rate > max_speed)
                     feed_rate = max_speed;
             }

@@ -410,7 +410,7 @@ void Endstops::do_homing_corexy(char axes_to_move)
 void Endstops::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode *>(argument);
-    if ( gcode->has_g) {
+    if ( gcode->has_g()) {
         if ( gcode->g == 28 ) {
             gcode->mark_as_taken();
             // G28 is received, we have homing to do
@@ -421,7 +421,7 @@ void Endstops::on_gcode_received(void *argument)
             // Do we move select axes or all of them
             char axes_to_move = 0;
             // only enable homing if the endstop is defined, deltas always home all axis
-            bool home_all = this->is_delta || !( gcode->has_letter('X') || gcode->has_letter('Y') || gcode->has_letter('Z') );
+            bool home_all = this->is_delta || !( gcode->has_x() || gcode->has_y() || gcode->has_z() );
 
             for ( char c = 'X'; c <= 'Z'; c++ ) {
                 if ( (home_all || gcode->has_letter(c)) && this->pins[c - 'X' + (this->home_direction[c - 'X'] ? 0 : 3)].connected() ) {
@@ -445,7 +445,7 @@ void Endstops::on_gcode_received(void *argument)
                 }
             }
         }
-    } else if (gcode->has_m) {
+    } else if (gcode->has_m()) {
         switch (gcode->m) {
             case 119: {
 
@@ -462,9 +462,9 @@ void Endstops::on_gcode_received(void *argument)
             break;
 
             case 206: // M206 - set homing offset
-                if (gcode->has_letter('X')) home_offset[0] = gcode->get_value('X');
-                if (gcode->has_letter('Y')) home_offset[1] = gcode->get_value('Y');
-                if (gcode->has_letter('Z')) home_offset[2] = gcode->get_value('Z');
+                if (gcode->has_x()) home_offset[0] = gcode->x;
+                if (gcode->has_y()) home_offset[1] = gcode->y;
+                if (gcode->has_z()) home_offset[2] = gcode->z;
                 gcode->stream->printf("X %5.3f Y %5.3f Z %5.3f\n", home_offset[0], home_offset[1], home_offset[2]);
                 gcode->mark_as_taken();
                 break;
@@ -484,8 +484,8 @@ void Endstops::on_gcode_received(void *argument)
             case 665: { // M665 - set max gamma/z height
                 gcode->mark_as_taken();
                 float gamma_max = this->homing_position[2];
-                if (gcode->has_letter('Z')) {
-                    this->homing_position[2] = gamma_max = gcode->get_value('Z');
+                if (gcode->has_z()) {
+                    this->homing_position[2] = gamma_max = gcode->z;
                 }
                 gcode->stream->printf("Max Z %8.3f ", gamma_max);
                 gcode->add_nl = true;
@@ -497,9 +497,9 @@ void Endstops::on_gcode_received(void *argument)
                 float mm[3];
                 trim2mm(mm);
 
-                if (gcode->has_letter('X')) mm[0] = gcode->get_value('X');
-                if (gcode->has_letter('Y')) mm[1] = gcode->get_value('Y');
-                if (gcode->has_letter('Z')) mm[2] = gcode->get_value('Z');
+                if (gcode->has_x()) mm[0] = gcode->x;
+                if (gcode->has_y()) mm[1] = gcode->y;
+                if (gcode->has_z()) mm[2] = gcode->z;
 
                 int dirx = (this->home_direction[0] ? 1 : -1);
                 int diry = (this->home_direction[1] ? 1 : -1);
@@ -517,19 +517,19 @@ void Endstops::on_gcode_received(void *argument)
             // NOTE this is to test accuracy of lead screws etc.
             case 910: { // M910 - move specific number of raw steps
                 int x= 0, y=0 , z= 0, f= 200*16;
-                if (gcode->has_letter('F')) f = gcode->get_value('F');
-                if (gcode->has_letter('X')) {
-                    x = gcode->get_value('X');
+                if (gcode->has_f()) f = gcode->f;
+                if (gcode->has_x()) {
+                    x = gcode->x;
                     this->steppers[X_AXIS]->set_speed(f);
                     this->steppers[X_AXIS]->move(x<0, abs(x));
                 }
-                if (gcode->has_letter('Y')) {
-                    y = gcode->get_value('Y');
+                if (gcode->has_y()) {
+                    y = gcode->y;
                     this->steppers[Y_AXIS]->set_speed(f);
                     this->steppers[Y_AXIS]->move(y<0, abs(y));
                 }
-                if (gcode->has_letter('Z')) {
-                    z = gcode->get_value('Z');
+                if (gcode->has_z()) {
+                    z = gcode->z;
                     this->steppers[Z_AXIS]->set_speed(f);
                     this->steppers[Z_AXIS]->move(z<0, abs(z));
                 }
