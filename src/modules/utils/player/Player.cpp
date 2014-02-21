@@ -283,9 +283,11 @@ void Player::on_main_loop(void* argument){
                 do {
                     c = fgetc(this->current_file_handler);
                 } while((c != EOF) || (c != '\n'));
+                this->current_stream->printf("Warning: Discarded long line\n");
                 return;
             }
             buffer[len] = '\0';
+            this->current_stream->printf("%s\n", buffer);
 
             struct SerialMessage message;
             message.message.assign(buffer);
