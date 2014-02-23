@@ -245,7 +245,7 @@ void Robot::on_gcode_received(void * argument){
     this->motion_mode = -1;
 
    //G-letter Gcodes are mostly what the Robot module is interrested in, other modules also catch the gcode event and do stuff accordingly
-    if( gcode->has_g){
+    if( gcode->has_g()){
         switch( gcode->g ){
             case 0:  this->motion_mode = MOTION_MODE_SEEK; gcode->mark_as_taken(); break;
             case 1:  this->motion_mode = MOTION_MODE_LINEAR; gcode->mark_as_taken();  break;
@@ -262,9 +262,14 @@ void Robot::on_gcode_received(void * argument){
                 if(gcode->get_num_args() == 0){
                     clear_vector(this->last_milestone);
                 }else{
-                    for (char letter = 'X'; letter <= 'Z'; letter++){
-                        if ( gcode->has_letter(letter) )
-                            this->last_milestone[letter-'X'] = this->to_millimeters(gcode->get_value(letter));
+                    if( gcode->has_x() ){
+                        this->last_milestone[X_AXIS] = this->to_millimeters(gcode->x);
+                    }
+                    if( gcode->has_y() ){
+                        this->last_milestone[Y_AXIS] = this->to_millimeters(gcode->y);
+                    }
+                    if( gcode->has_z() ){
+                        this->last_milestone[Z_AXIS] = this->to_millimeters(gcode->z);
                     }
                 }
 
@@ -279,17 +284,17 @@ void Robot::on_gcode_received(void * argument){
                 return;
            }
        }
-   }else if( gcode->has_m){
+   }else if( gcode->has_m()){
         switch( gcode->m ){
             case 92: // M92 - set steps per mm
-                if (gcode->has_letter('X'))
-                    actuators[0]->change_steps_per_mm(this->to_millimeters(gcode->get_value('X')));
-                if (gcode->has_letter('Y'))
-                    actuators[1]->change_steps_per_mm(this->to_millimeters(gcode->get_value('Y')));
-                if (gcode->has_letter('Z'))
-                    actuators[2]->change_steps_per_mm(this->to_millimeters(gcode->get_value('Z')));
-                if (gcode->has_letter('F'))
-                    seconds_per_minute = gcode->get_value('F');
+                if (gcode->has_x())
+                    actuators[0]->change_steps_per_mm(this->to_millimeters(gcode->x));
+                if (gcode->has_y())
+                    actuators[1]->change_steps_per_mm(this->to_millimeters(gcode->y));
+                if (gcode->has_z())
+                    actuators[2]->change_steps_per_mm(this->to_millimeters(gcode->z));
+                if (gcode->has_f())
+                    seconds_per_minute = gcode->f;
 
                 gcode->stream->printf("X:%g Y:%g Z:%g F:%g ", actuators[0]->steps_per_mm, actuators[1]->steps_per_mm, actuators[2]->steps_per_mm, seconds_per_minute);
                 gcode->add_nl = true;
@@ -304,12 +309,12 @@ void Robot::on_gcode_received(void * argument){
                 return;
 
             case 203: // M203 Set maximum feedrates in mm/sec
-                if (gcode->has_letter('X'))
-                    this->max_speeds[X_AXIS]= gcode->get_value('X');
-                if (gcode->has_letter('Y'))
-                    this->max_speeds[Y_AXIS]= gcode->get_value('Y');
-                if (gcode->has_letter('Z'))
-                    this->max_speeds[Z_AXIS]= gcode->get_value('Z');
+                if (gcode->has_x())
+                    this->max_speeds[X_AXIS]= gcode->x;
+                if (gcode->has_y())
+                    this->max_speeds[Y_AXIS]= gcode->y;
+                if (gcode->has_z())
+                    this->max_speeds[Z_AXIS]= gcode->z;
                 if (gcode->has_letter('A'))
                     alpha_stepper_motor->max_rate= gcode->get_value('A');
                 if (gcode->has_letter('B'))
@@ -341,9 +346,9 @@ void Robot::on_gcode_received(void * argument){
 
             case 205: // M205 Xnnn - set junction deviation Snnn - Set minimum planner speed
                 gcode->mark_as_taken();
-                if (gcode->has_letter('X'))
+                if (gcode->has_x())
                 {
-                    float jd= gcode->get_value('X');
+                    float jd= gcode->x;
                     // enforce minimum
                     if (jd < 0.0F)
                         jd = 0.0F;
@@ -426,18 +431,23 @@ void Robot::on_gcode_received(void * argument){
             offset[letter-'I'] = this->to_millimeters(gcode->get_value(letter));
         }
     }
-    for(char letter = 'X'; letter <= 'Z'; letter++){
-        if( gcode->has_letter(letter) ){
-            target[letter-'X'] = this->to_millimeters(gcode->get_value(letter)) + ( this->absolute_mode ? 0 : target[letter-'X']);
+
+    if( gcode->has_x() ){
+        target[X_AXIS] = this->to_millimeters(gcode->x) + ( this->absolute_mode ? 0 : target[X_AXIS]);
+    }
+    if( gcode->has_y() ){
+        target[Y_AXIS] = this->to_millimeters(gcode->y) + ( this->absolute_mode ? 0 : target[Y_AXIS]);
         }
+    if( gcode->has_z() ){
+        target[Z_AXIS] = this->to_millimeters(gcode->z) + ( this->absolute_mode ? 0 : target[Z_AXIS]);
     }
 
-    if( gcode->has_letter('F') )
+    if( gcode->has_f() )
     {
         if( this->motion_mode == MOTION_MODE_SEEK )
-            this->seek_rate = this->to_millimeters( gcode->get_value('F') );
+            this->seek_rate = this->to_millimeters( gcode->f );
         else
-            this->feed_rate = this->to_millimeters( gcode->get_value('F') );
+            this->feed_rate = this->to_millimeters( gcode->f );
     }
 
     //Perform any physical actions

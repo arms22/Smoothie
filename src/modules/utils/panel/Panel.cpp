@@ -202,7 +202,7 @@ uint32_t Panel::button_tick(uint32_t dummy)
 void Panel::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode *>(argument);
-    if ( gcode->has_m) {
+    if ( gcode->has_m()) {
         if ( gcode->m == 117 ) { // set LCD message
             this->message = get_arguments(gcode->command);
             if (this->message.size() > 20) this->message = this->message.substr(0, 20);

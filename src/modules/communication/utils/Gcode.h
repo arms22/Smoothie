@@ -20,8 +20,6 @@ class Gcode {
         Gcode(const Gcode& to_copy); 
         Gcode& operator= (const Gcode& to_copy);
         
-        bool   has_letter ( char letter );
-
         float get_value  ( char letter );
 
         float get_double ( char letter );
@@ -31,13 +29,39 @@ class Gcode {
         void   prepare_cached_values();
         void   mark_as_taken();
 
+        #define LETTER_BIT(letter) (1 << ((letter) - 'A'))
+
+        inline bool has_letter(char c) const {
+          return ((f_has_letter & LETTER_BIT( c )) != 0);
+        }
+        inline bool has_g() const {
+          return ((f_has_letter & LETTER_BIT('G')) != 0);
+        }
+        inline bool has_m() const {
+          return ((f_has_letter & LETTER_BIT('M')) != 0);
+        }
+        inline bool has_x() const {
+          return ((f_has_letter & LETTER_BIT('X')) != 0);
+        }
+        inline bool has_y() const {
+          return ((f_has_letter & LETTER_BIT('Y')) != 0);
+        }
+        inline bool has_z() const {
+          return ((f_has_letter & LETTER_BIT('Z')) != 0);
+        }
+        inline bool has_e() const {
+          return ((f_has_letter & LETTER_BIT('E')) != 0);
+        }
+        inline bool has_f() const {
+          return ((f_has_letter & LETTER_BIT('F')) != 0);
+        }
+        unsigned int f_has_letter;
+
+        unsigned int g, m;
+        float x, y, z, e, f;
+
         string command;
         float millimeters_of_travel;
-
-        bool has_m;
-        bool has_g;
-        unsigned int m;
-        unsigned int g;
 
         bool add_nl;
         StreamOutput* stream;
