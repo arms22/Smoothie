@@ -272,37 +272,30 @@ void Player::on_main_loop(void* argument){
     }
 
     if( this->playing_file ){
-        string buffer;
-        bool discard= false;
-        int c;
-        buffer.reserve(20);
+        char buffer[128 + 1];
+
         // Print each line of the file
-        while ((c = fgetc(this->current_file_handler)) != EOF){
-            if (c == '\n'){
-                if(discard) {
-                    // we hit a long line and discarded it
-                    discard= false;
-                    buffer.clear();
-                    this->current_stream->printf("Warning: Discarded long line\n");
-                    return;
-                }
-                this->current_stream->printf("%s\n", buffer.c_str());
-                struct SerialMessage message;
-                message.message = buffer;
-                message.stream = &(StreamOutput::NullStream); // we don't really need to see the ok
-                // wait for the queue to have enough room that a serial message could still be received before sending
-                THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message);
-                played_cnt += buffer.size();
-                buffer.clear();
+        if( fgets(buffer, sizeof(buffer), this->current_file_handler) != NULL ){
+            size_t len = strlen(buffer) - 1;
+            if( buffer[len] != '\n' ){
+                // we hit a long line and discarded it
+                int c;
+                do {
+                    c = fgetc(this->current_file_handler);
+                } while((c != EOF) || (c != '\n'));
+                this->current_stream->printf("Warning: Discarded long line\n");
                 return;
-
-            }else if(buffer.size() > 128) {
-                // discard rest of line
-                discard= true;
-
-            }else{
-                buffer += c;
             }
+            buffer[len] = '\0';
+            this->current_stream->printf("%s\n", buffer);
+
+            struct SerialMessage message;
+            message.message.assign(buffer);
+            message.stream = &(StreamOutput::NullStream); // we don't really need to see the ok
+            // wait for the queue to have enough room that a serial message could still be received before sending
+            THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message);
+            played_cnt += len;
+            return;
         }
 
         this->playing_file = false;
