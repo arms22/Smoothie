@@ -29,45 +29,50 @@ class Gcode {
         void   prepare_cached_values();
         void   mark_as_taken();
 
-        #define LETTER_BIT(letter) (1 << ((letter) - 'A'))
+        struct {
+          int                       add_nl             :1;
+          int                       accepted_by_module :1;
+          int                       reserve            :4;
+          int                       has_letter         :26;
+        } flags;
+
+        #define LETTER_BIT(letter)  (1 << ((letter) - 'A'))
 
         inline bool has_letter(char c) const {
-          return ((f_has_letter & LETTER_BIT( c )) != 0);
+          return ((flags.has_letter & LETTER_BIT( c )) != 0);
         }
         inline bool has_g() const {
-          return ((f_has_letter & LETTER_BIT('G')) != 0);
+          return ((flags.has_letter & LETTER_BIT('G')) != 0);
         }
         inline bool has_m() const {
-          return ((f_has_letter & LETTER_BIT('M')) != 0);
+          return ((flags.has_letter & LETTER_BIT('M')) != 0);
         }
         inline bool has_x() const {
-          return ((f_has_letter & LETTER_BIT('X')) != 0);
+          return ((flags.has_letter & LETTER_BIT('X')) != 0);
         }
         inline bool has_y() const {
-          return ((f_has_letter & LETTER_BIT('Y')) != 0);
+          return ((flags.has_letter & LETTER_BIT('Y')) != 0);
         }
         inline bool has_z() const {
-          return ((f_has_letter & LETTER_BIT('Z')) != 0);
+          return ((flags.has_letter & LETTER_BIT('Z')) != 0);
         }
         inline bool has_e() const {
-          return ((f_has_letter & LETTER_BIT('E')) != 0);
+          return ((flags.has_letter & LETTER_BIT('E')) != 0);
         }
         inline bool has_f() const {
-          return ((f_has_letter & LETTER_BIT('F')) != 0);
+          return ((flags.has_letter & LETTER_BIT('F')) != 0);
         }
-        unsigned int f_has_letter;
 
-        unsigned int g, m;
+        #define add_nl              flags.add_nl
+        #define accepted_by_module  flags.accepted_by_module
+
+        unsigned short g, m;
         float x, y, z, e, f;
-
-        string command;
         float millimeters_of_travel;
 
-        bool add_nl;
         StreamOutput* stream;
 
+        string command;
         string txt_after_ok;
-        bool accepted_by_module;
-
 };
 #endif
