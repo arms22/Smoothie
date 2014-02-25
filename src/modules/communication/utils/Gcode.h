@@ -19,21 +19,20 @@ class Gcode {
         Gcode(const string&, StreamOutput*);
         Gcode(const Gcode& to_copy); 
         Gcode& operator= (const Gcode& to_copy);
-        
+
         float get_value  ( char letter );
-
         float get_double ( char letter );
-        int    get_int    ( char letter );
+        int   get_int    ( char letter );
 
-        int    get_num_args();
-        void   prepare_cached_values();
-        void   mark_as_taken();
+        int   get_num_args();
+        void  prepare_cached_values();
+        void  mark_as_taken();
 
         struct {
-          int                       add_nl             :1;
-          int                       accepted_by_module :1;
-          int                       reserve            :4;
-          int                       has_letter         :26;
+          int  add_nl             :1;
+          int  accepted_by_module :1;
+          int  reserve            :4;
+          int  has_letter         :26;
         } flags;
 
         #define LETTER_BIT(letter)  (1 << ((letter) - 'A'))
@@ -66,7 +65,7 @@ class Gcode {
         #define add_nl              flags.add_nl
         #define accepted_by_module  flags.accepted_by_module
 
-        unsigned short g, m;
+        uint16_t g, m;
         float x, y, z, e, f;
         float millimeters_of_travel;
 
