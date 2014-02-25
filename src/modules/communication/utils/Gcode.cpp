@@ -20,6 +20,7 @@ Gcode::Gcode(const string& command, StreamOutput* stream) : g(0), m(0), x(0), y(
     prepare_cached_values();
     this->millimeters_of_travel = 0.0F;
     this->add_nl = false;
+    this->ok_sent_by_module = false;
     this->accepted_by_module = false;
 }
 
@@ -35,6 +36,7 @@ Gcode::Gcode(const Gcode& to_copy){
     this->e                     = to_copy.e;
     this->f                     = to_copy.f;
     this->stream                = to_copy.stream;
+    this->ok_sent_by_module     = false;
     this->accepted_by_module    = false;
     this->txt_after_ok.assign( to_copy.txt_after_ok );
 }
@@ -54,6 +56,7 @@ Gcode& Gcode::operator= (const Gcode& to_copy){
         this->stream                = to_copy.stream;
         this->txt_after_ok.assign( to_copy.txt_after_ok );
     }
+    this->ok_sent_by_module = false;
     this->accepted_by_module = false;
     return *this;
 }
@@ -145,6 +148,10 @@ void Gcode::prepare_cached_values(){
     } while( c != '\0' );
 }
 
-void Gcode::mark_as_taken(){
+void Gcode::mark_as_taken(bool send_ok){
+    if(send_ok && !this->ok_sent_by_module){
+        this->stream->puts("ok\r\n");
+        this->ok_sent_by_module = true;
+    }
     this->accepted_by_module = true;
 }

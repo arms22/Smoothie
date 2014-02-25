@@ -412,7 +412,7 @@ void Endstops::on_gcode_received(void *argument)
     Gcode *gcode = static_cast<Gcode *>(argument);
     if ( gcode->has_g()) {
         if ( gcode->g == 28 ) {
-            gcode->mark_as_taken();
+            gcode->mark_as_taken(true);
             // G28 is received, we have homing to do
 
             // First wait for the queue to be empty

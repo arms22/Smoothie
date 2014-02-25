@@ -161,15 +161,18 @@ try_again:
                     //Dispatch message!
                     THEKERNEL->call_event(ON_GCODE_RECEIVED, gcode );
                     if(gcode->add_nl)
-                        new_message.stream->printf("\r\n");
+                        new_message.stream->puts("\r\n");
 
                     if( return_error_on_unhandled_gcode == true && gcode->accepted_by_module == false)
-                        new_message.stream->printf("ok (command unclaimed)\r\n");
+                        new_message.stream->puts("ok (command unclaimed)\r\n");
                     else if(!gcode->txt_after_ok.empty()) {
                         new_message.stream->printf("ok %s\r\n", gcode->txt_after_ok.c_str());
                         gcode->txt_after_ok.clear();
-                    } else
-                        new_message.stream->printf("ok\r\n");
+                    } else {
+                        if(gcode->ok_sent_by_module == false){
+                            new_message.stream->puts("ok\r\n");
+                        }
+                    }
 
                     delete gcode;
 

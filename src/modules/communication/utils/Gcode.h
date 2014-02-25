@@ -26,14 +26,7 @@ class Gcode {
 
         int   get_num_args();
         void  prepare_cached_values();
-        void  mark_as_taken();
-
-        struct {
-          int  f_add_nl             :1;
-          int  f_accepted_by_module :1;
-          int  f_reserve            :4;
-          int  f_has_letter         :26;
-        } flags;
+        void  mark_as_taken(bool send_ok = false);
 
         #define LETTER_BIT(letter)  (1 << ((letter) - 'A'))
 
@@ -62,9 +55,6 @@ class Gcode {
           return ((flags.f_has_letter & LETTER_BIT('F')) != 0);
         }
 
-        #define add_nl              flags.f_add_nl
-        #define accepted_by_module  flags.f_accepted_by_module
-
         uint16_t g, m;
         float x, y, z, e, f;
         float millimeters_of_travel;
@@ -73,5 +63,17 @@ class Gcode {
 
         string command;
         string txt_after_ok;
+
+        struct {
+            int f_add_nl             :1;
+            int f_accepted_by_module :1;
+            int f_ok_sent_by_module  :1;
+            int f_reserve            :3;
+            int f_has_letter         :26;
+        } flags;
+
+        #define add_nl flags.f_add_nl
+        #define accepted_by_module flags.f_accepted_by_module
+        #define ok_sent_by_module flags.f_ok_sent_by_module
 };
 #endif
