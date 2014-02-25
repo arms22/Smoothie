@@ -29,21 +29,30 @@ class Gcode {
 
         int    get_num_args();
         void   prepare_cached_values();
-        void   mark_as_taken();
+        void   mark_as_taken(bool send_ok = false);
 
         string command;
         float millimeters_of_travel;
 
-        bool has_m;
-        bool has_g;
-        unsigned int m;
-        unsigned int g;
+        unsigned short m;
+        unsigned short g;
 
-        bool add_nl;
         StreamOutput* stream;
 
         string txt_after_ok;
-        bool accepted_by_module;
 
+        struct {
+            bool f_has_m              :1;
+            bool f_has_g              :1;
+            bool f_add_nl             :1;
+            bool f_accepted_by_module :1;
+            bool f_ok_sent_by_module  :1;
+        } flags;
+
+        #define has_m flags.f_has_m
+        #define has_g flags.f_has_g
+        #define add_nl flags.f_add_nl
+        #define accepted_by_module flags.f_accepted_by_module
+        #define ok_sent_by_module flags.f_ok_sent_by_module
 };
 #endif

@@ -254,10 +254,10 @@ void Robot::on_gcode_received(void * argument){
    //G-letter Gcodes are mostly what the Robot module is interrested in, other modules also catch the gcode event and do stuff accordingly
     if( gcode->has_g){
         switch( gcode->g ){
-            case 0:  this->motion_mode = MOTION_MODE_SEEK; gcode->mark_as_taken(); break;
-            case 1:  this->motion_mode = MOTION_MODE_LINEAR; gcode->mark_as_taken();  break;
-            case 2:  this->motion_mode = MOTION_MODE_CW_ARC; gcode->mark_as_taken();  break;
-            case 3:  this->motion_mode = MOTION_MODE_CCW_ARC; gcode->mark_as_taken();  break;
+            case 0:  this->motion_mode = MOTION_MODE_SEEK; gcode->mark_as_taken(true); break;
+            case 1:  this->motion_mode = MOTION_MODE_LINEAR; gcode->mark_as_taken(true);  break;
+            case 2:  this->motion_mode = MOTION_MODE_CW_ARC; gcode->mark_as_taken(true);  break;
+            case 3:  this->motion_mode = MOTION_MODE_CCW_ARC; gcode->mark_as_taken(true);  break;
             case 17: this->select_plane(X_AXIS, Y_AXIS, Z_AXIS); gcode->mark_as_taken();  break;
             case 18: this->select_plane(X_AXIS, Z_AXIS, Y_AXIS); gcode->mark_as_taken();  break;
             case 19: this->select_plane(Y_AXIS, Z_AXIS, X_AXIS); gcode->mark_as_taken();  break;

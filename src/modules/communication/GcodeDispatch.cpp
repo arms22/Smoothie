@@ -168,8 +168,11 @@ try_again:
                     else if(!gcode->txt_after_ok.empty()) {
                         new_message.stream->printf("ok %s\r\n", gcode->txt_after_ok.c_str());
                         gcode->txt_after_ok.clear();
-                    } else
-                        new_message.stream->printf("ok\r\n");
+                    } else {
+                        if(gcode->ok_sent_by_module == false){
+                            new_message.stream->printf("ok\r\n");
+                        }
+                    }
 
                     delete gcode;
 

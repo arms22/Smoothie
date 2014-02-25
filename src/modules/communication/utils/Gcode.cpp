@@ -16,9 +16,11 @@ using std::string;
 
 // This is a gcode object. It reprensents a GCode string/command, an caches some important values about that command for the sake of performance.
 // It gets passed around in events, and attached to the queue ( that'll change )
-Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), add_nl(false), stream(stream) {
+Gcode::Gcode(const string& command, StreamOutput* stream) : command(command), m(0), g(0), stream(stream) {
     prepare_cached_values();
     this->millimeters_of_travel = 0.0F;
+    this->add_nl=false;
+    this->ok_sent_by_module=false;
     this->accepted_by_module=false;
 }
 
@@ -31,6 +33,7 @@ Gcode::Gcode(const Gcode& to_copy){
     this->g                     = to_copy.g;
     this->add_nl                = to_copy.add_nl;
     this->stream                = to_copy.stream;
+    this->ok_sent_by_module     = to_copy.ok_sent_by_module;
     this->accepted_by_module=false;
     this->txt_after_ok.assign( to_copy.txt_after_ok );
 }
@@ -44,6 +47,7 @@ Gcode& Gcode::operator= (const Gcode& to_copy){
         this->m                     = to_copy.m;
         this->g                     = to_copy.g;
         this->add_nl                = to_copy.add_nl;
+        this->ok_sent_by_module     = to_copy.ok_sent_by_module;
         this->stream                = to_copy.stream;
         this->txt_after_ok.assign( to_copy.txt_after_ok );
     }
@@ -122,6 +126,10 @@ void Gcode::prepare_cached_values(){
     }
 }
 
-void Gcode::mark_as_taken(){
+void Gcode::mark_as_taken(bool send_ok){
+    if(send_ok && !this->ok_sent_by_module){
+        this->stream->puts("ok\r\n");
+        this->ok_sent_by_module = true;
+    }
     this->accepted_by_module = true;
 }
