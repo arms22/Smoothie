@@ -16,16 +16,17 @@ using std::string;
 
 // This is a gcode object. It reprensents a GCode string/command, an caches some important values about that command for the sake of performance.
 // It gets passed around in events, and attached to the queue ( that'll change )
-Gcode::Gcode(const string& command, StreamOutput* stream) : g(0), m(0), x(0), y(0), z(0), e(0), f(0), command(command), add_nl(false), stream(stream) {
+Gcode::Gcode(const string& command, StreamOutput* stream) : g(0), m(0), x(0), y(0), z(0), e(0), f(0), command(command), stream(stream){
     prepare_cached_values();
     this->millimeters_of_travel = 0.0F;
-    this->accepted_by_module=false;
+    this->add_nl = false;
+    this->accepted_by_module = false;
 }
 
 Gcode::Gcode(const Gcode& to_copy){
     this->command.assign( to_copy.command );
     this->millimeters_of_travel = to_copy.millimeters_of_travel;
-    this->f_has_letter          = to_copy.f_has_letter;
+    this->flags                 = to_copy.flags;
     this->m                     = to_copy.m;
     this->g                     = to_copy.g;
     this->x                     = to_copy.x;
@@ -33,9 +34,8 @@ Gcode::Gcode(const Gcode& to_copy){
     this->z                     = to_copy.z;
     this->e                     = to_copy.e;
     this->f                     = to_copy.f;
-    this->add_nl                = to_copy.add_nl;
     this->stream                = to_copy.stream;
-    this->accepted_by_module=false;
+    this->accepted_by_module    = false;
     this->txt_after_ok.assign( to_copy.txt_after_ok );
 }
 
@@ -43,7 +43,7 @@ Gcode& Gcode::operator= (const Gcode& to_copy){
     if( this != &to_copy ){
         this->command.assign( to_copy.command );
         this->millimeters_of_travel = to_copy.millimeters_of_travel;
-        this->f_has_letter          = to_copy.f_has_letter;
+        this->flags                 = to_copy.flags;
         this->m                     = to_copy.m;
         this->g                     = to_copy.g;
         this->x                     = to_copy.x;
@@ -51,11 +51,10 @@ Gcode& Gcode::operator= (const Gcode& to_copy){
         this->z                     = to_copy.z;
         this->e                     = to_copy.e;
         this->f                     = to_copy.f;
-        this->add_nl                = to_copy.add_nl;
         this->stream                = to_copy.stream;
         this->txt_after_ok.assign( to_copy.txt_after_ok );
     }
-    this->accepted_by_module=false;
+    this->accepted_by_module = false;
     return *this;
 }
 
@@ -109,33 +108,39 @@ void Gcode::prepare_cached_values(){
     const char* cs = command.c_str();
     char* cn;
     char c;
-    f_has_letter = 0;
+    flags.f_has_letter = 0;
     do {
         c = *cs++;
         if( 'A' <= c && c <= 'Z' ){
-            f_has_letter |= LETTER_BIT(c);
-            if( 'G' == c ) {
-                this->g = strtol(cs, &cn, 10);
-                cs = cn;
-            }else if( 'M' == c ){
-                this->m = strtol(cs, &cn, 10);
-                cs = cn;
-            }else if( 'X' == c ){
-                this->x = strtof(cs, &cn);
-                cs = cn;
-            }else if( 'Y' == c ){
-                this->y = strtof(cs, &cn);
-                cs = cn;
-            }else if( 'Z' == c ){
-                this->z = strtof(cs, &cn);
-                cs = cn;
-            }else if( 'E' == c ){
-                this->e = strtof(cs, &cn);
-                cs = cn;
-            }else if( 'F' == c ){
-                this->f = strtof(cs, &cn);
-                cs = cn;
+            if ( flags.f_has_letter & LETTER_BIT(c) ){
+                ;
+            } else {
+                flags.f_has_letter |= LETTER_BIT(c);
+                if( 'G' == c ) {
+                    this->g = strtol(cs, &cn, 10);
+                    cs = cn;
+                }else if( 'M' == c ){
+                    this->m = strtol(cs, &cn, 10);
+                    cs = cn;
+                }else if( 'X' == c ){
+                    this->x = strtof(cs, &cn);
+                    cs = cn;
+                }else if( 'Y' == c ){
+                    this->y = strtof(cs, &cn);
+                    cs = cn;
+                }else if( 'Z' == c ){
+                    this->z = strtof(cs, &cn);
+                    cs = cn;
+                }else if( 'E' == c ){
+                    this->e = strtof(cs, &cn);
+                    cs = cn;
+                }else if( 'F' == c ){
+                    this->f = strtof(cs, &cn);
+                    cs = cn;
+                }
             }
+        } else if( (c == ';') || (c == '(') ){
+            break;
         }
     } while( c != '\0' );
 }
