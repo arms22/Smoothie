@@ -29,41 +29,41 @@ class Gcode {
         void  mark_as_taken();
 
         struct {
-          int  add_nl             :1;
-          int  accepted_by_module :1;
-          int  reserve            :4;
-          int  has_letter         :26;
+          int  f_add_nl             :1;
+          int  f_accepted_by_module :1;
+          int  f_reserve            :4;
+          int  f_has_letter         :26;
         } flags;
 
         #define LETTER_BIT(letter)  (1 << ((letter) - 'A'))
 
         inline bool has_letter(char c) const {
-          return ((flags.has_letter & LETTER_BIT( c )) != 0);
+          return ((flags.f_has_letter & LETTER_BIT( c )) != 0);
         }
         inline bool has_g() const {
-          return ((flags.has_letter & LETTER_BIT('G')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('G')) != 0);
         }
         inline bool has_m() const {
-          return ((flags.has_letter & LETTER_BIT('M')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('M')) != 0);
         }
         inline bool has_x() const {
-          return ((flags.has_letter & LETTER_BIT('X')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('X')) != 0);
         }
         inline bool has_y() const {
-          return ((flags.has_letter & LETTER_BIT('Y')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('Y')) != 0);
         }
         inline bool has_z() const {
-          return ((flags.has_letter & LETTER_BIT('Z')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('Z')) != 0);
         }
         inline bool has_e() const {
-          return ((flags.has_letter & LETTER_BIT('E')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('E')) != 0);
         }
         inline bool has_f() const {
-          return ((flags.has_letter & LETTER_BIT('F')) != 0);
+          return ((flags.f_has_letter & LETTER_BIT('F')) != 0);
         }
 
-        #define add_nl              flags.add_nl
-        #define accepted_by_module  flags.accepted_by_module
+        #define add_nl              flags.f_add_nl
+        #define accepted_by_module  flags.f_accepted_by_module
 
         uint16_t g, m;
         float x, y, z, e, f;

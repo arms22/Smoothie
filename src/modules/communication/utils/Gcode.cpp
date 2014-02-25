@@ -108,14 +108,14 @@ void Gcode::prepare_cached_values(){
     const char* cs = command.c_str();
     char* cn;
     char c;
-    flags.has_letter = 0;
+    flags.f_has_letter = 0;
     do {
         c = *cs++;
         if( 'A' <= c && c <= 'Z' ){
-            if ( flags.has_letter & LETTER_BIT(c) ){
+            if ( flags.f_has_letter & LETTER_BIT(c) ){
                 ;
             } else {
-                flags.has_letter |= LETTER_BIT(c);
+                flags.f_has_letter |= LETTER_BIT(c);
                 if( 'G' == c ) {
                     this->g = strtol(cs, &cn, 10);
                     cs = cn;
