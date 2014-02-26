@@ -45,7 +45,7 @@ void Player::on_second_tick(void*) {
 
 void Player::on_gcode_received(void *argument) {
     Gcode *gcode = static_cast<Gcode*>(argument);
-    string args= get_arguments(gcode->command);
+
     if (gcode->has_m()) {
         if (gcode->m == 21) { // Dummy code; makes Octoprint happy -- supposed to initialize SD card
             gcode->mark_as_taken();
@@ -54,6 +54,7 @@ void Player::on_gcode_received(void *argument) {
         }else if (gcode->m == 23) { // select file
             gcode->mark_as_taken();
             // Get filename
+            string args = get_arguments(gcode->command);
             this->filename= "/sd/" + shift_parameter( args );
             this->current_stream = &(StreamOutput::NullStream);
 
@@ -131,6 +132,7 @@ void Player::on_gcode_received(void *argument) {
         }else if (gcode->m == 32) { // select file and start print
             gcode->mark_as_taken();
             // Get filename
+            string args = get_arguments(gcode->command);
             this->filename= "/sd/" + shift_parameter( args );
             this->current_stream = &(StreamOutput::NullStream);
 
