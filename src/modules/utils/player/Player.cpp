@@ -276,25 +276,33 @@ void Player::on_main_loop(void* argument){
 
         // Print each line of the file
         if( fgets(buffer, sizeof(buffer), this->current_file_handler) != NULL ){
-            size_t len = strlen(buffer) - 1;
-            if( buffer[len] != '\n' ){
-                // we hit a long line and discarded it
-                int c;
-                do {
-                    c = fgetc(this->current_file_handler);
-                } while((c != EOF) || (c != '\n'));
-                this->current_stream->printf("Warning: Discarded long line\n");
-                return;
-            }
-            buffer[len] = '\0';
-            this->current_stream->printf("%s\n", buffer);
+            size_t len = strlen(buffer);
+            if( len > 0 ){
+                played_cnt += len;
+                len--;
+                if( buffer[len] != '\n' ){
+                    // we hit a long line and discarded it
+                    int c;
+                    do {
+                        c = fgetc(this->current_file_handler);
+                        if((c == EOF) || (c == '\n')){
+                            played_cnt += (c == '\n');
+                            break;
+                        }
+                        played_cnt++;
+                    } while(1);
+                    this->current_stream->printf("Warning: Discarded long line\n");
+                    return;
+                }
+                this->current_stream->puts(buffer);
+                buffer[len] = '\0';
 
-            struct SerialMessage message;
-            message.message.assign(buffer);
-            message.stream = &(StreamOutput::NullStream); // we don't really need to see the ok
-            // wait for the queue to have enough room that a serial message could still be received before sending
-            THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message);
-            played_cnt += len;
+                struct SerialMessage message;
+                message.message.assign(buffer);
+                message.stream = &(StreamOutput::NullStream); // we don't really need to see the ok
+                // wait for the queue to have enough room that a serial message could still be received before sending
+                THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message);
+            }
             return;
         }
 
