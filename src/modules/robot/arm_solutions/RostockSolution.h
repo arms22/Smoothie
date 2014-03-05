@@ -10,9 +10,17 @@
 #define arm_length_checksum         CHECKSUM("arm_length")
 #define arm_radius_checksum         CHECKSUM("arm_radius")
 
-#define alpha_angle_checksum                CHECKSUM("alpha_angle")
+#define alpha_angle_checksum                 CHECKSUM("alpha_angle")
 #define beta_relative_angle_checksum         CHECKSUM("beta_relative_angle")
 #define gamma_relative_angle_checksum        CHECKSUM("gamma_relative_angle")
+
+#define arm_length_correction_a_checksum    CHECKSUM("arm_length_correction_a")
+#define arm_length_correction_b_checksum    CHECKSUM("arm_length_correction_b")
+#define arm_length_correction_c_checksum    CHECKSUM("arm_length_correction_c")
+
+#define arm_radius_correction_a_checksum    CHECKSUM("arm_radius_correction_a")
+#define arm_radius_correction_b_checksum    CHECKSUM("arm_radius_correction_b")
+#define arm_radius_correction_c_checksum    CHECKSUM("arm_radius_correction_c")
 
 class RostockSolution : public BaseSolution {
     public:
@@ -25,7 +33,10 @@ class RostockSolution : public BaseSolution {
 
         float arm_length;
         float arm_radius;
-        float arm_length_squared;
+        float arm_length_squared[3];
+        float arm_length_correction[3];
+        float arm_radius_correction[3];
+        float arm_radius_corrected[3];
 
         float sin_alpha;
         float cos_alpha;
