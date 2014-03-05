@@ -28,7 +28,10 @@ class RostockSolution : public BaseSolution {
         void cartesian_to_actuator( float[], float[] );
         void actuator_to_cartesian( float[], float[] );
 
-        float solve_arm( float millimeters[] );
+        bool set_optional(char parameter, float value);
+        bool get_optional(char parameter, float *value);
+        
+        float solve_arm( int tower, float millimeters[] );
         void rotate( float in[], float out[], float sin, float cos );
 
         float arm_length;
@@ -44,6 +47,8 @@ class RostockSolution : public BaseSolution {
         float cos_beta;
         float sin_gamma;
         float cos_gamma;
+    private:
+        void init();
 };
 
 
