@@ -402,16 +402,23 @@ void Robot::on_gcode_received(void * argument){
                 gcode->mark_as_taken();
                 // the parameter args could be any letter so try each one
                 for(char c='A';c<='Z';c++) {
-                    float v;
-                    bool supported= arm_solution->get_optional(c, &v); // retrieve current value if supported
-
-                    if(supported && gcode->has_letter(c)) { // set new value if supported
-                        v= gcode->get_value(c);
-                        arm_solution->set_optional(c, v);
-                    }
-                    if(supported) { // print all current values of supported options
-                        gcode->stream->printf("%c %8.3f ", c, v);
-                        gcode->add_nl = true;
+                    if(gcode->has_letter(c)){
+                        if(c == 'S'){
+                            this->delta_segments_per_second = gcode->get_value(c)
+                            gcode->stream->printf("%c %8.3f ", c, this->delta_segments_per_second);
+                            gcode->add_nl = true;
+                        }else{
+                            float v;
+                            bool supported= arm_solution->get_optional(c, &v); // retrieve current value if supported
+                            if(supported){
+                                // set new value if supported
+                                v= gcode->get_value(c);
+                                arm_solution->set_optional(c, v);
+                                // print all current values of supported options
+                                gcode->stream->printf("%c %8.3f ", c, v);
+                                gcode->add_nl = true;
+                            }
+                        }
                     }
                 }
                 break;
