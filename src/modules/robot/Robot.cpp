@@ -557,22 +557,22 @@ void Robot::append_line(Gcode* gcode, float target[], float rate_mm_s ){
     // We cut the line into smaller segments. This is not usefull in a cartesian robot, but necessary for robots with rotational axes.
     // In cartesian robot, a high "mm_per_line_segment" setting will prevent waste.
     // In delta robots either mm_per_line_segment can be used OR delta_segments_per_second The latter is more efficient and avoids splitting fast long lines into very small segments, like initial z move to 0, it is what Johanns Marlin delta port does
-    uint16_t segments;
+    uint16_t segments = 1;
 
     if(this->delta_segments_per_second > 1.0F) {
         // enabled if set to something > 1, it is set to 0.0 by default
         // segment based on current speed and requested segments per second
         // the faster the travel speed the fewer segments needed
         // NOTE rate is mm/sec and we take into account any speed override
-        float seconds = gcode->millimeters_of_travel / rate_mm_s;
-        segments= max(1, ceil(this->delta_segments_per_second * seconds));
-        // TODO if we are only moving in Z on a delta we don't really need to segment at all
-
+        if( gcode->has_x() || gcode->has_y() ){
+            float seconds = gcode->millimeters_of_travel / rate_mm_s;
+            segments = max(1, ceil(this->delta_segments_per_second * seconds));            
+        }
     }else{
-        if(this->mm_per_line_segment == 0.0F){
-            segments= 1; // don't split it up
-        }else{
-            segments = ceil( gcode->millimeters_of_travel/ this->mm_per_line_segment);
+        if(this->mm_per_line_segment > 0.0F){
+            if( gcode->has_x() || gcode->has_y() ){
+                segments = ceil( gcode->millimeters_of_travel / this->mm_per_line_segment);
+            }
         }
     }
 
