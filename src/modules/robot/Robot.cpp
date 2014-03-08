@@ -407,16 +407,23 @@ void Robot::on_gcode_received(void * argument){
                 gcode->mark_as_taken();
                 // the parameter args could be any letter so try each one
                 for(char c='A';c<='Z';c++) {
-                    float v;
-                    bool supported= arm_solution->get_optional(c, &v); // retrieve current value if supported
-
-                    if(supported && gcode->has_letter(c)) { // set new value if supported
-                        v= gcode->get_value(c);
-                        arm_solution->set_optional(c, v);
-                    }
-                    if(supported) { // print all current values of supported options
-                        gcode->stream->printf("%c %8.3f ", c, v);
-                        gcode->add_nl = true;
+                    if(gcode->has_letter(c)){
+                        if(c == 'S'){
+                            this->delta_segments_per_second = gcode->get_value(c);
+                            gcode->stream->printf("%c %8.3f ", c, this->delta_segments_per_second);
+                            gcode->add_nl = true;
+                        }else{
+                            float v;
+                            bool supported= arm_solution->get_optional(c, &v); // retrieve current value if supported
+                            if(supported){
+                                // set new value if supported
+                                v= gcode->get_value(c);
+                                arm_solution->set_optional(c, v);
+                                // print all current values of supported options
+                                gcode->stream->printf("%c %8.3f ", c, v);
+                                gcode->add_nl = true;
+                            }
+                        }
                     }
                 }
                 break;
@@ -567,22 +574,22 @@ void Robot::append_line(Gcode* gcode, float target[], float rate_mm_s ){
     // We cut the line into smaller segments. This is not usefull in a cartesian robot, but necessary for robots with rotational axes.
     // In cartesian robot, a high "mm_per_line_segment" setting will prevent waste.
     // In delta robots either mm_per_line_segment can be used OR delta_segments_per_second The latter is more efficient and avoids splitting fast long lines into very small segments, like initial z move to 0, it is what Johanns Marlin delta port does
-    uint16_t segments;
+    uint16_t segments = 1;
 
     if(this->delta_segments_per_second > 1.0F) {
         // enabled if set to something > 1, it is set to 0.0 by default
         // segment based on current speed and requested segments per second
         // the faster the travel speed the fewer segments needed
         // NOTE rate is mm/sec and we take into account any speed override
-        float seconds = gcode->millimeters_of_travel / rate_mm_s;
-        segments= max(1, ceil(this->delta_segments_per_second * seconds));
-        // TODO if we are only moving in Z on a delta we don't really need to segment at all
-
+        if( gcode->has_letter('X') || gcode->has_letter('Y') ){
+            float seconds = gcode->millimeters_of_travel / rate_mm_s;
+            segments = max(1, ceil(this->delta_segments_per_second * seconds));            
+        }
     }else{
-        if(this->mm_per_line_segment == 0.0F){
-            segments= 1; // don't split it up
-        }else{
-            segments = ceil( gcode->millimeters_of_travel/ this->mm_per_line_segment);
+        if(this->mm_per_line_segment > 0.0F){
+            if( gcode->has_letter('X') || gcode->has_letter('Y') ){
+                segments = ceil( gcode->millimeters_of_travel / this->mm_per_line_segment);
+            }
         }
     }
 

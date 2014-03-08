@@ -13,39 +13,53 @@ JohannKosselSolution::JohannKosselSolution(Config* config)
     // arm_radius is the horizontal distance from hinge to hinge when the effector is centered
     arm_radius         = config->value(arm_radius_checksum)->by_default(124.0f)->as_number();
 
+    arm_length_correction[0] = config->value(arm_length_correction_a_checksum)->by_default(0.0f)->as_number();
+    arm_length_correction[1] = config->value(arm_length_correction_b_checksum)->by_default(0.0f)->as_number();
+    arm_length_correction[2] = config->value(arm_length_correction_c_checksum)->by_default(0.0f)->as_number();
+
+    arm_radius_correction[0] = config->value(arm_radius_correction_a_checksum)->by_default(0.0f)->as_number();
+    arm_radius_correction[1] = config->value(arm_radius_correction_b_checksum)->by_default(0.0f)->as_number();
+    arm_radius_correction[2] = config->value(arm_radius_correction_c_checksum)->by_default(0.0f)->as_number();
+
     init();
 }
 
 void JohannKosselSolution::init() {
-    arm_length_squared = SQ(arm_length);
+    arm_length_squared[0] = SQ(arm_length + arm_length_correction[0]);
+    arm_length_squared[1] = SQ(arm_length + arm_length_correction[1]);
+    arm_length_squared[2] = SQ(arm_length + arm_length_correction[2]);
 
     // Effective X/Y positions of the three vertical towers.
-    float DELTA_RADIUS = arm_radius;
+    float DELTA_RADIUS[3] = {
+        arm_radius + arm_radius_correction[0],
+        arm_radius + arm_radius_correction[1],
+        arm_radius + arm_radius_correction[2],
+    };
 
     float SIN_60   = 0.8660254037844386F;
     float COS_60   = 0.5F;
 
-    DELTA_TOWER1_X = -SIN_60 * DELTA_RADIUS; // front left tower
-    DELTA_TOWER1_Y = -COS_60 * DELTA_RADIUS;
+    DELTA_TOWER1_X = -SIN_60 * DELTA_RADIUS[0]; // front left tower
+    DELTA_TOWER1_Y = -COS_60 * DELTA_RADIUS[0];
 
-    DELTA_TOWER2_X =  SIN_60 * DELTA_RADIUS; // front right tower
-    DELTA_TOWER2_Y = -COS_60 * DELTA_RADIUS;
+    DELTA_TOWER2_X =  SIN_60 * DELTA_RADIUS[1]; // front right tower
+    DELTA_TOWER2_Y = -COS_60 * DELTA_RADIUS[1];
 
     DELTA_TOWER3_X = 0.0F; // back middle tower
-    DELTA_TOWER3_Y = DELTA_RADIUS;
+    DELTA_TOWER3_Y = DELTA_RADIUS[2];
 }
 
 void JohannKosselSolution::cartesian_to_actuator( float cartesian_mm[], float actuator_mm[] )
 {
-    actuator_mm[ALPHA_STEPPER] = sqrtf(this->arm_length_squared
+    actuator_mm[ALPHA_STEPPER] = sqrtf(this->arm_length_squared[0]
                                 - SQ(DELTA_TOWER1_X - cartesian_mm[X_AXIS])
                                 - SQ(DELTA_TOWER1_Y - cartesian_mm[Y_AXIS])
                                 ) + cartesian_mm[Z_AXIS];
-    actuator_mm[BETA_STEPPER ] = sqrtf(this->arm_length_squared
+    actuator_mm[BETA_STEPPER ] = sqrtf(this->arm_length_squared[1]
                                 - SQ(DELTA_TOWER2_X - cartesian_mm[X_AXIS])
                                 - SQ(DELTA_TOWER2_Y - cartesian_mm[Y_AXIS])
                                 ) + cartesian_mm[Z_AXIS];
-    actuator_mm[GAMMA_STEPPER] = sqrtf(this->arm_length_squared
+    actuator_mm[GAMMA_STEPPER] = sqrtf(this->arm_length_squared[2]
                                 - SQ(DELTA_TOWER3_X - cartesian_mm[X_AXIS])
                                 - SQ(DELTA_TOWER3_Y - cartesian_mm[Y_AXIS])
                                 ) + cartesian_mm[Z_AXIS];
@@ -81,7 +95,7 @@ void JohannKosselSolution::actuator_to_cartesian( float actuator_mm[], float car
                           actuator_mm[0] * a + actuator_mm[1] * b + actuator_mm[2] * c );
 
     float r_sq = 0.5F * q * magsq_s12 * magsq_s23 * magsq_s13;
-    float dist = sqrtf(inv_nmag_sq * (arm_length_squared - r_sq));
+    float dist = sqrtf(inv_nmag_sq * (SQ(arm_length) - r_sq));
 
     Vector3 cartesian = circumcenter.sub(normal.mul(dist));
 
@@ -94,10 +108,28 @@ bool JohannKosselSolution::set_optional(char parameter, float value) {
 
     switch(parameter) {
         case 'L': // sets arm_length
-            arm_length= value;
+            arm_length = value;
             break;
         case 'R': // sets arm_radius
-            arm_radius= value;
+            arm_radius = value;
+            break;
+        case 'A':
+            arm_length_correction[0] = value;
+            break;
+        case 'B':
+            arm_length_correction[1] = value;
+            break;
+        case 'C':
+            arm_length_correction[2] = value;
+            break;
+        case 'D':
+            arm_radius_correction[0] = value;
+            break;
+        case 'E':
+            arm_radius_correction[1] = value;
+            break;
+        case 'F':
+            arm_radius_correction[2] = value;
             break;
         default:
             return false;
@@ -111,14 +143,32 @@ bool JohannKosselSolution::get_optional(char parameter, float *value) {
 
     switch(parameter) {
         case 'L': // get arm_length
-            *value= this->arm_length;
+            *value = this->arm_length;
             break;
         case 'R': // get arm_radius
-            *value= this->arm_radius;
+            *value = this->arm_radius;
+            break;
+        case 'A':
+            *value = this->arm_length_correction[0];
+            break;
+        case 'B':
+            *value = this->arm_length_correction[1];
+            break;
+        case 'C':
+            *value = this->arm_length_correction[2];
+            break;
+        case 'D':
+            *value = this->arm_radius_correction[0];
+            break;
+        case 'E':
+            *value = this->arm_radius_correction[1];
+            break;
+        case 'F':
+            *value = this->arm_radius_correction[2];
             break;
         default:
             return false;
     }
 
     return true;
-};
+}
