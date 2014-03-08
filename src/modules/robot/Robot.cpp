@@ -581,13 +581,13 @@ void Robot::append_line(Gcode* gcode, float target[], float rate_mm_s ){
         // segment based on current speed and requested segments per second
         // the faster the travel speed the fewer segments needed
         // NOTE rate is mm/sec and we take into account any speed override
-        if( gcode->has_letter('X') || gcode->has_letter('Y') ){
+        if( gcode->has_x() || gcode->has_y() ){
             float seconds = gcode->millimeters_of_travel / rate_mm_s;
             segments = max(1, ceil(this->delta_segments_per_second * seconds));            
         }
     }else{
         if(this->mm_per_line_segment > 0.0F){
-            if( gcode->has_letter('X') || gcode->has_letter('Y') ){
+            if( gcode->has_x() || gcode->has_y() ){
                 segments = ceil( gcode->millimeters_of_travel / this->mm_per_line_segment);
             }
         }
