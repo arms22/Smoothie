@@ -23,6 +23,7 @@
 
 #include "libs/Kernel.h"
 #include "libs/SerialMessage.h"
+#include "StreamOutputPool.h"
 
 // extern void setled(int, bool);
 #define setled(a, b) do {} while (0)
@@ -267,7 +268,7 @@ void USBSerial::on_main_loop(void *argument)
         {
             attached = true;
             THEKERNEL->streams->append_stream(this);
-            writeBlock((const uint8_t *) "Smoothie\nok\n", 12);
+            puts("Smoothie\r\nok\r\n");
         }
         else
         {

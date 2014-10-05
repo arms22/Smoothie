@@ -6,22 +6,25 @@ class Vector3
 public:
     Vector3();
     Vector3(float, float, float);
+    Vector3(const Vector3& to_copy);
+    Vector3& operator= (const Vector3& to_copy);
 
-    float&   operator[](int);
+    float    operator[](int) const;
+    void     set(float a, float b, float c);
+    Vector3  cross(const Vector3&) const;
 
-    Vector3  cross(const Vector3);
+    float    dot(const Vector3&) const;
 
-    float    dot(const Vector3);
+    float    magsq() const;
+    float    mag() const;
 
-    float    magsq();
-    float    mag();
+    Vector3  add(const Vector3&) const;
+    Vector3  sub(const Vector3&) const;
 
-    Vector3  add(const Vector3);
-    Vector3  sub(const Vector3);
+    Vector3  mul(float) const;
+    Vector3  mul(const Vector3& v) const;
 
-    Vector3  mul(float);
-
-    Vector3  unit(void);
+    Vector3  unit(void) const;
 
 private:
     float  elem[3];

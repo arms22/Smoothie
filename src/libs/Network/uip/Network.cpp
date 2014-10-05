@@ -5,6 +5,8 @@
 #include "CommandQueue.h"
 
 #include "Kernel.h"
+#include "Config.h"
+#include "SlowTicker.h"
 
 #include "Network.h"
 #include "PublicDataRequest.h"
@@ -12,6 +14,9 @@
 #include "net_util.h"
 #include "uip_arp.h"
 #include "clock-arch.h"
+#include "NetworkPublicAccess.h"
+#include "checksumm.h"
+#include "ConfigValue.h"
 
 #include "uip.h"
 #include "telnetd.h"
@@ -23,6 +28,15 @@
 #include <mri.h>
 
 #define BUF ((struct uip_eth_hdr *)&uip_buf[0])
+
+#define network_enable_checksum CHECKSUM("enable")
+#define network_webserver_checksum CHECKSUM("webserver")
+#define network_telnet_checksum CHECKSUM("telnet")
+#define network_mac_override_checksum CHECKSUM("mac_override")
+#define network_ip_address_checksum CHECKSUM("ip_address")
+#define network_hostname_checksum CHECKSUM("hostname")
+#define network_ip_gateway_checksum CHECKSUM("ip_gateway")
+#define network_ip_mask_checksum CHECKSUM("ip_mask")
 
 extern "C" void uip_log(char *m)
 {
@@ -42,11 +56,15 @@ Network::Network()
     theNetwork= this;
     sftpd= NULL;
     instance= this;
+    hostname = NULL;
 }
 
 Network::~Network()
 {
     delete ethernet;
+    if (hostname != NULL) {
+        delete hostname;
+    }
 }
 
 static uint32_t getSerialNumberHash()
@@ -83,6 +101,24 @@ static bool parse_ip_str(const string &s, uint8_t *a, int len, char sep = '.')
     return true;
 }
 
+static bool parse_hostname(const string &s)
+{
+    const std::string::size_type str_len = s.size();
+    if(str_len > 63){
+        return false;
+    }
+    for (unsigned int i = 0; i < str_len; i++) {
+        const char c = s.at(i);
+        if(!(c >= 'a' && c <= 'z')
+                && !(c >= 'A' && c <= 'Z')
+                && !(i != 0 && c >= '0' && c <= '9')
+                && !(i != 0 && i != str_len - 1 && c == '-')){
+            return false;
+        }
+    }
+    return true;
+}
+
 void Network::on_module_loaded()
 {
     if ( !THEKERNEL->config->value( network_checksum, network_enable_checksum )->by_default(false)->as_bool() ) {
@@ -115,12 +151,20 @@ void Network::on_module_loaded()
     ethernet->set_mac(mac_address);
 
     // get IP address, mask and gateway address here....
-    bool bad = false;
     string s = THEKERNEL->config->value( network_checksum, network_ip_address_checksum )->by_default("auto")->as_string();
     if (s == "auto") {
         use_dhcp = true;
-
+        s = THEKERNEL->config->value( network_checksum, network_hostname_checksum )->as_string();
+        if (!s.empty()) {
+            if(parse_hostname(s)){
+                hostname = new char [s.length() + 1];
+                strcpy(hostname, s.c_str());
+            }else{
+                printf("Invalid hostname: %s\n", s.c_str());
+            }
+        }
     } else {
+        bool bad = false;
         use_dhcp = false;
         if (!parse_ip_str(s, ipaddr, 4)) {
             printf("Invalid IP address: %s\n", s.c_str());
@@ -136,7 +180,6 @@ void Network::on_module_loaded()
             printf("Invalid IP gateway: %s\n", s.c_str());
             bad = true;
         }
-
         if (bad) {
             printf("Network not started due to errors in config");
             return;
@@ -190,7 +233,7 @@ void Network::on_idle(void *argument)
 {
     if (!ethernet->isUp()) return;
 
-    int len;
+    int len= sizeof(uip_buf); // set maximum size
     if (ethernet->_receive_frame(uip_buf, &len)) {
         uip_len = len;
         this->handlePacket();
@@ -325,7 +368,7 @@ void Network::init(void)
 
     }else{
     #if UIP_CONF_UDP
-        dhcpc_init(mac_address, sizeof(mac_address));
+        dhcpc_init(mac_address, sizeof(mac_address), hostname);
         dhcpc_request();
         printf("Getting IP address....\n");
     #endif

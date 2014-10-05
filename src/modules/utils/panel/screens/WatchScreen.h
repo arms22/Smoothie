@@ -14,6 +14,7 @@ class WatchScreen : public PanelScreen
 {
 public:
     WatchScreen();
+    ~WatchScreen();
     void on_refresh();
     void on_enter();
     void on_main_loop();
@@ -30,6 +31,7 @@ private:
 
     bool speed_changed;
     bool issue_change_speed;
+    bool fan_state;
     int hotendtemp;
     int hotendtarget;
     int bedtemp;

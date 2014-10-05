@@ -12,6 +12,13 @@
 #include "Planner.h"
 #include "Conveyor.h"
 #include "StepperMotor.h"
+#include "Robot.h"
+#include "checksumm.h"
+#include "SlowTicker.h"
+#include "Config.h"
+#include "ConfigValue.h"
+#include "Gcode.h"
+#include "Block.h"
 
 #include <vector>
 using namespace std;
@@ -21,33 +28,28 @@ using namespace std;
 
 #include <mri.h>
 
+#define acceleration_ticks_per_second_checksum      CHECKSUM("acceleration_ticks_per_second")
+#define minimum_steps_per_minute_checksum           CHECKSUM("minimum_steps_per_minute")
 
 // The stepper reacts to blocks that have XYZ movement to transform them into actual stepper motor moves
 // TODO: This does accel, accel should be in StepperMotor
-
-Stepper* stepper;
-uint32_t previous_step_count;
-uint32_t skipped_speed_updates;
-uint32_t speed_ticks_counter;
 
 Stepper::Stepper(){
     this->current_block = NULL;
     this->paused = false;
     this->trapezoid_generator_busy = false;
     this->force_speed_update = false;
-    skipped_speed_updates = 0;
 }
 
 //Called when the module has just been loaded
 void Stepper::on_module_loaded(){
-    stepper = this;
-    register_for_event(ON_CONFIG_RELOAD);
     this->register_for_event(ON_BLOCK_BEGIN);
     this->register_for_event(ON_BLOCK_END);
     this->register_for_event(ON_GCODE_EXECUTE);
     this->register_for_event(ON_GCODE_RECEIVED);
     this->register_for_event(ON_PLAY);
     this->register_for_event(ON_PAUSE);
+    this->register_for_event(ON_HALT);
 
     // Get onfiguration
     this->on_config_reload(this);
@@ -86,6 +88,11 @@ void Stepper::on_play(void* argument){
     THEKERNEL->robot->alpha_stepper_motor->unpause();
     THEKERNEL->robot->beta_stepper_motor->unpause();
     THEKERNEL->robot->gamma_stepper_motor->unpause();
+}
+
+void Stepper::on_halt(void* argument)
+{
+    this->turn_enable_pins_off();
 }
 
 void Stepper::on_gcode_received(void* argument){
@@ -144,9 +151,9 @@ void Stepper::on_block_begin(void* argument){
     }
 
     // Setup : instruct stepper motors to move
-    if( block->steps[ALPHA_STEPPER] > 0 ){ THEKERNEL->robot->alpha_stepper_motor->move( ( block->direction_bits >> 0  ) & 1 , block->steps[ALPHA_STEPPER] ); }
-    if( block->steps[BETA_STEPPER ] > 0 ){ THEKERNEL->robot->beta_stepper_motor->move(  ( block->direction_bits >> 1  ) & 1 , block->steps[BETA_STEPPER ] ); }
-    if( block->steps[GAMMA_STEPPER] > 0 ){ THEKERNEL->robot->gamma_stepper_motor->move( ( block->direction_bits >> 2  ) & 1 , block->steps[GAMMA_STEPPER] ); }
+    if( block->steps[ALPHA_STEPPER] > 0 ){ THEKERNEL->robot->alpha_stepper_motor->move( block->direction_bits[ALPHA_STEPPER], block->steps[ALPHA_STEPPER] ); }
+    if( block->steps[BETA_STEPPER ] > 0 ){ THEKERNEL->robot->beta_stepper_motor->move(  block->direction_bits[BETA_STEPPER], block->steps[BETA_STEPPER ] ); }
+    if( block->steps[GAMMA_STEPPER] > 0 ){ THEKERNEL->robot->gamma_stepper_motor->move( block->direction_bits[GAMMA_STEPPER], block->steps[GAMMA_STEPPER] ); }
 
     this->current_block = block;
 
@@ -249,15 +256,12 @@ inline void Stepper::trapezoid_generator_reset(){
     this->trapezoid_adjusted_rate = this->current_block->initial_rate;
     this->force_speed_update = true;
     this->trapezoid_tick_cycle_counter = 0;
-    previous_step_count = 0;
-    skipped_speed_updates = 0;
-    speed_ticks_counter = 0;
 }
 
 // Update the speed for all steppers
 void Stepper::set_step_events_per_second( float steps_per_second )
 {
-    // We do not step slower than this
+    // We do not step slower than this, FIXME shoul dbe calculated for the slowest axis not the fastest
     //steps_per_second = max(steps_per_second, this->minimum_steps_per_second);
     if( steps_per_second < this->minimum_steps_per_second ){
         steps_per_second = this->minimum_steps_per_second;

@@ -9,7 +9,7 @@ using std::string;
 
 extern volatile bool _isr_context;
 
-string lc(string str);
+string lc(const string& str);
 
 bool is_alpha( int );
 bool is_digit( int );
@@ -22,7 +22,7 @@ string remove_non_number( string str );
 uint16_t get_checksum(const string& to_check);
 uint16_t get_checksum(const char* to_check);
 
-void get_checksums(uint16_t check_sums[], const string key);
+void get_checksums(uint16_t check_sums[], const string& key);
 
 string shift_parameter( string &parameters );
 

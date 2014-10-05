@@ -18,6 +18,10 @@ using namespace std;
 #include "Conveyor.h"
 #include "Planner.h"
 #include "mri.h"
+#include "checksumm.h"
+#include "Config.h"
+#include "libs/StreamOutputPool.h"
+#include "ConfigValue.h"
 
 #define planner_queue_size_checksum CHECKSUM("planner_queue_size")
 
@@ -56,7 +60,6 @@ Conveyor::Conveyor(){
 void Conveyor::on_module_loaded(){
     register_for_event(ON_IDLE);
     register_for_event(ON_MAIN_LOOP);
-    register_for_event(ON_CONFIG_RELOAD);
 
     on_config_reload(this);
 }
@@ -66,10 +69,9 @@ void Conveyor::on_module_loaded(){
 void Conveyor::on_idle(void* argument){
     if (queue.tail_i != gc_pending)
     {
-        if (queue.is_empty())
+        if (queue.is_empty()) {
             __debugbreak();
-        else
-        {
+        }else{
             // Cleanly delete block
             Block* block = queue.tail_ref();
 //             block->debug();

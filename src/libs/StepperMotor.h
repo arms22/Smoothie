@@ -19,21 +19,13 @@ class StepperMotor {
         StepperMotor();
         StepperMotor(Pin& step, Pin& dir, Pin& en);
 
-        // Called a great many times per second, to step if we have to now
-        inline void tick() {
-            // increase the ( fixed point ) counter by one tick 11t
-            fx_counter += (uint32_t)(1<<16);
-
-            // if we are to step now 10t
-            if (fx_counter >= fx_ticks_per_step)
-                step();
-        };
 
         void step();
         inline void unstep() { step_pin.set(0); };
 
         inline void enable(bool state) { en_pin.set(!state); };
 
+        bool is_moving() { return moving; }
         void move_finished();
         void move( bool direction, unsigned int steps );
         void signal_move_finished();
@@ -42,10 +34,15 @@ class StepperMotor {
         void pause();
         void unpause();
 
+        float get_steps_per_second()  const { return steps_per_second; }
+        void set_steps_per_second(float ss) { steps_per_second= ss; }
+        float get_steps_per_mm()  const { return steps_per_mm; }
         void change_steps_per_mm(float);
         void change_last_milestone(float);
 
         int  steps_to_target(float);
+        uint32_t get_steps_to_move() const { return steps_to_move; }
+        uint32_t get_stepped() const { return stepped; }
 
         template<typename T> void attach( T *optr, uint32_t ( T::*fptr )( uint32_t ) ){
             Hook* hook = new Hook();
@@ -59,6 +56,12 @@ class StepperMotor {
             this->signal_step = true;
         }
 
+        friend class StepTicker;
+        friend class Stepper;
+        friend class Planner;
+        friend class Robot;
+
+    private:
         Hook* end_hook;
         Hook* step_signal_hook;
 
@@ -92,6 +95,16 @@ class StepperMotor {
         bool remove_from_active_list_next_reset;
 
         bool is_move_finished; // Whether the move just finished
+
+        // Called a great many times per second, to step if we have to now
+        inline void tick() {
+            // increase the ( fixed point ) counter by one tick 11t
+            fx_counter += (uint32_t)(1<<16);
+
+            // if we are to step now 10t
+            if (fx_counter >= fx_ticks_per_step)
+                step();
+        };
 };
 
 #endif
