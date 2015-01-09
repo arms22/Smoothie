@@ -19,6 +19,11 @@ Gcode::Gcode(const string &command, StreamOutput *stream, bool strip)
     this->command= strdup(command.c_str());
     this->m= 0;
     this->g= 0;
+    this->x= 0;
+    this->y= 0;
+    this->z= 0;
+    this->e= 0;
+    this->f= 0;
     this->add_nl= false;
     this->stream= stream;
     this->millimeters_of_travel = 0.0F;
@@ -41,6 +46,11 @@ Gcode::Gcode(const Gcode &to_copy)
     this->letter_bit            = to_copy.letter_bit;
     this->m                     = to_copy.m;
     this->g                     = to_copy.g;
+    this->x                     = to_copy.x;
+    this->y                     = to_copy.y;
+    this->z                     = to_copy.z;
+    this->e                     = to_copy.e;
+    this->f                     = to_copy.f;
     this->add_nl                = to_copy.add_nl;
     this->stream                = to_copy.stream;
     this->accepted_by_module    = false;
@@ -55,6 +65,11 @@ Gcode &Gcode::operator= (const Gcode &to_copy)
         this->letter_bit            = to_copy.letter_bit;
         this->m                     = to_copy.m;
         this->g                     = to_copy.g;
+        this->x                     = to_copy.x;
+        this->y                     = to_copy.y;
+        this->z                     = to_copy.z;
+        this->e                     = to_copy.e;
+        this->f                     = to_copy.f;
         this->add_nl                = to_copy.add_nl;
         this->stream                = to_copy.stream;
         this->txt_after_ok.assign( to_copy.txt_after_ok );
@@ -66,7 +81,18 @@ Gcode &Gcode::operator= (const Gcode &to_copy)
 // Retrieve the value for a given letter
 float Gcode::get_value( char letter, char **ptr ) const
 {
-    if (has_letter(letter)) {
+    if( 'X' == letter ){
+        return this->x;
+    }else if( 'Y' == letter ){
+        return this->y;
+    }else if( 'Z' == letter ){
+        return this->z;
+    }else if( 'E' == letter ){
+        return this->e;
+    }else if( 'F' == letter ){
+        return this->f;
+    }
+    else{
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -78,14 +104,13 @@ float Gcode::get_value( char letter, char **ptr ) const
                 return r;
         }
     }
-    }
     if(ptr != nullptr) *ptr= nullptr;
+    }
     return 0;
 }
 
 int Gcode::get_int( char letter, char **ptr ) const
 {
-    if (has_letter(letter)) {
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -97,14 +122,12 @@ int Gcode::get_int( char letter, char **ptr ) const
                 return r;
         }
     }
-    }
     if(ptr != nullptr) *ptr= nullptr;
     return 0;
 }
 
 uint32_t Gcode::get_uint( char letter, char **ptr ) const
 {
-    if (has_letter(letter)) {
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -116,8 +139,7 @@ uint32_t Gcode::get_uint( char letter, char **ptr ) const
                 return r;
         }
     }
-    }
-    if(ptr != nullptr) *ptr= nullptr;
+    if(ptr != nullptr) *ptr= nullptr;        
     return 0;
 }
 
@@ -146,7 +168,7 @@ void Gcode::prepare_cached_values(bool strip)
         if ('A' <= c && c <= 'Z') {
             if(letter_bit & LETTER_BIT(c)){
                 ;
-    } else {
+            } else {
                 letter_bit |= LETTER_BIT(c);
                 if ('G' == c) {
                     this->g = strtol(cs, &p, 10);
@@ -154,9 +176,24 @@ void Gcode::prepare_cached_values(bool strip)
                 }else if ('M' == c) {
                     this->m = strtol(cs, &p, 10);
                     cs = p;
+                }else if( 'X' == c ){
+                    this->x = strtof(cs, &p);
+                    cs = p;
+                }else if( 'Y' == c ){
+                    this->y = strtof(cs, &p);
+                    cs = p;
+                }else if( 'Z' == c ){
+                    this->z = strtof(cs, &p);
+                    cs = p;
+                }else if( 'E' == c ){
+                    this->e = strtof(cs, &p);
+                    cs = p;
+                }else if( 'F' == c ){
+                    this->f = strtof(cs, &p);
+                    cs = p;
                 }
-    }
-    }
+            }
+        }
     } while (c != '\0');
 
     if(!strip) return;

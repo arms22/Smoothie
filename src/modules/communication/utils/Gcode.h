@@ -33,6 +33,7 @@ class Gcode {
         unsigned int m;
         unsigned int g;
         float millimeters_of_travel;
+        float x, y, z, e, f;
 
         struct {
             bool add_nl:1;
