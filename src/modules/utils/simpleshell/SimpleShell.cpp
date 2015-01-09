@@ -151,7 +151,6 @@ void SimpleShell::on_second_tick(void *)
 void SimpleShell::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode *>(argument);
-    string args = get_arguments(gcode->get_command());
 
     if (gcode->has_m) {
         if (gcode->m == 20) { // list sd card
@@ -161,10 +160,12 @@ void SimpleShell::on_gcode_received(void *argument)
             gcode->stream->printf("End file list\r\n");
 
         } else if (gcode->m == 30) { // remove file
+            string args = get_arguments(gcode->get_command());
             gcode->mark_as_taken();
             rm_command("/sd/" + args, gcode->stream);
 
         } else if(gcode->m == 501) { // load config override
+            string args = get_arguments(gcode->get_command());
             gcode->mark_as_taken();
             if(args.empty()) {
                 load_command("/sd/config-override", gcode->stream);
@@ -173,6 +174,7 @@ void SimpleShell::on_gcode_received(void *argument)
             }
 
         } else if(gcode->m == 504) { // save to specific config override file
+            string args = get_arguments(gcode->get_command());
             gcode->mark_as_taken();
             if(args.empty()) {
                 save_command("/sd/config-override", gcode->stream);
