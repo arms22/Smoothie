@@ -80,7 +80,6 @@ string Player::extract_options(string& args)
 void Player::on_gcode_received(void *argument)
 {
     Gcode *gcode = static_cast<Gcode *>(argument);
-    string args = get_arguments(gcode->get_command());
     if (gcode->has_m) {
         if (gcode->m == 21) { // Dummy code; makes Octoprint happy -- supposed to initialize SD card
             gcode->mark_as_taken();
@@ -88,6 +87,7 @@ void Player::on_gcode_received(void *argument)
             gcode->stream->printf("SD card ok\r\n");
 
         } else if (gcode->m == 23) { // select file
+            string args = get_arguments(gcode->get_command());
             gcode->mark_as_taken();
             this->filename = "/sd/" + args; // filename is whatever is in args
             this->current_stream = &(StreamOutput::NullStream);
@@ -164,6 +164,7 @@ void Player::on_gcode_received(void *argument)
             progress_command("-b", gcode->stream);
 
         } else if (gcode->m == 32) { // select file and start print
+            string args = get_arguments(gcode->get_command());
             gcode->mark_as_taken();
             // Get filename
             this->filename = "/sd/" + args; // filename is whatever is in args including spaces
