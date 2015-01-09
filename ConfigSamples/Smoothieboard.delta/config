@@ -18,7 +18,7 @@ beta_steps_per_mm                            200              # Steps per mm for
 gamma_steps_per_mm                           200              # Steps per mm for gamma stepper
 
 arm_length                                   190.0            # this is the length of an arm from hinge to hinge
-arm_radius                                   85.0375          # this is the horizontal distance from hinge to hinge
+arm_radius                                   84.8458          # this is the horizontal distance from hinge to hinge
                                                               # when the effector is centered
 
 # Planner module configuration : Look-ahead and acceleration configuration
@@ -45,13 +45,13 @@ z_axis_max_speed                             30000            # mm/min
 alpha_step_pin                               2.1              # Pin for alpha stepper step signal
 alpha_dir_pin                                0.11             # Pin for alpha stepper direction
 alpha_en_pin                                 0.10             # Pin for alpha enable
-alpha_current                                1.5              # Y stepper motor current
+alpha_current                                1.5              # X stepper motor current
 alpha_max_rate                               30000.0          # mm/min
 
 beta_step_pin                                2.0              # Pin for beta stepper step signal
 beta_dir_pin                                 0.5              # Pin for beta stepper direction
 beta_en_pin                                  0.4              # Pin for beta enable pin
-beta_current                                 1.5              # X stepper motor current
+beta_current                                 1.5              # Y stepper motor current
 beta_max_rate                                30000.0          # mm/min
 
 gamma_step_pin                               2.2              # Pin for gamma stepper step signal
@@ -211,12 +211,12 @@ endstops_enable                              true             # the endstop modu
 delta_homing                                 true             # forces all three axis to home a the same time regardless of
                                                               # what is specified in G28
 alpha_min_endstop                            nc               #
-alpha_max_endstop                            1.30!^           # add ! to invert pullup if switch is NO to ground
-alpha_homing_direction                       home_to_max      # Home up
+alpha_max_endstop                            1.31!^           #
+alpha_homing_direction                       home_to_max      #
 alpha_max                                    0                #
 beta_min_endstop                             nc               #
-beta_max_endstop                             1.31!^           #
-beta_homing_direction                        home_to_max      #
+beta_max_endstop                             1.30!^           # add ! to invert pullup if switch is NO to ground
+beta_homing_direction                        home_to_max      # Home up
 beta_max                                     0                #
 gamma_min_endstop                            nc               #
 gamma_max_endstop                            2.13!^           #
