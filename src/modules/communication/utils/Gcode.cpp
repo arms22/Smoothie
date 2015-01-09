@@ -38,8 +38,7 @@ Gcode::Gcode(const Gcode &to_copy)
 {
     this->command               = strdup(to_copy.command); // TODO we can reference count this so we share copies, may save more ram than the extra count we need to store
     this->millimeters_of_travel = to_copy.millimeters_of_travel;
-    this->has_m                 = to_copy.has_m;
-    this->has_g                 = to_copy.has_g;
+    this->letter_bit            = to_copy.letter_bit;
     this->m                     = to_copy.m;
     this->g                     = to_copy.g;
     this->add_nl                = to_copy.add_nl;
@@ -53,8 +52,7 @@ Gcode &Gcode::operator= (const Gcode &to_copy)
     if( this != &to_copy ) {
         this->command               = strdup(to_copy.command); // TODO we can reference count this so we share copies, may save more ram than the extra count we need to store
         this->millimeters_of_travel = to_copy.millimeters_of_travel;
-        this->has_m                 = to_copy.has_m;
-        this->has_g                 = to_copy.has_g;
+        this->letter_bit            = to_copy.letter_bit;
         this->m                     = to_copy.m;
         this->g                     = to_copy.g;
         this->add_nl                = to_copy.add_nl;
@@ -65,21 +63,10 @@ Gcode &Gcode::operator= (const Gcode &to_copy)
     return *this;
 }
 
-
-// Whether or not a Gcode has a letter
-bool Gcode::has_letter( char letter ) const
-{
-    for (size_t i = 0; i < strlen(this->command); ++i) {
-        if( command[i] == letter ) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // Retrieve the value for a given letter
 float Gcode::get_value( char letter, char **ptr ) const
 {
+    if (has_letter(letter)) {
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -91,12 +78,14 @@ float Gcode::get_value( char letter, char **ptr ) const
                 return r;
         }
     }
+    }
     if(ptr != nullptr) *ptr= nullptr;
     return 0;
 }
 
 int Gcode::get_int( char letter, char **ptr ) const
 {
+    if (has_letter(letter)) {
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -108,12 +97,14 @@ int Gcode::get_int( char letter, char **ptr ) const
                 return r;
         }
     }
+    }
     if(ptr != nullptr) *ptr= nullptr;
     return 0;
 }
 
 uint32_t Gcode::get_uint( char letter, char **ptr ) const
 {
+    if (has_letter(letter)) {
     const char *cs = command;
     char *cn = NULL;
     for (; *cs; cs++) {
@@ -125,6 +116,7 @@ uint32_t Gcode::get_uint( char letter, char **ptr ) const
                 return r;
         }
     }
+    }
     if(ptr != nullptr) *ptr= nullptr;
     return 0;
 }
@@ -132,8 +124,10 @@ uint32_t Gcode::get_uint( char letter, char **ptr ) const
 int Gcode::get_num_args() const
 {
     int count = 0;
-    for(size_t i = 1; i < strlen(command); i++) {
-        if( this->command[i] >= 'A' && this->command[i] <= 'Z' ) {
+    for( char c = 'A'; c <= 'Z'; c++ ){
+        if( c == 'G' ) continue; // ignore Gxxx
+        if( c == 'M' ) continue; // ignore Mxxx
+        if( has_letter(c) ){
             count++;
         }
     }
@@ -143,19 +137,27 @@ int Gcode::get_num_args() const
 // Cache some of this command's properties, so we don't have to parse the string every time we want to look at them
 void Gcode::prepare_cached_values(bool strip)
 {
-    char *p= nullptr;
-    if( this->has_letter('G') ) {
-        this->has_g = true;
-        this->g = this->get_int('G', &p);
+    const char *cs = command;
+    char *p = nullptr;
+    char c;
+    letter_bit = 0;
+    do {
+        c = *cs++;
+        if ('A' <= c && c <= 'Z') {
+            if(letter_bit & LETTER_BIT(c)){
+                ;
     } else {
-        this->has_g = false;
+                letter_bit |= LETTER_BIT(c);
+                if ('G' == c) {
+                    this->g = strtol(cs, &p, 10);
+                    cs = p;
+                }else if ('M' == c) {
+                    this->m = strtol(cs, &p, 10);
+                    cs = p;
+                }
     }
-    if( this->has_letter('M') ) {
-        this->has_m = true;
-        this->m = this->get_int('M', &p);
-    } else {
-        this->has_m = false;
     }
+    } while (c != '\0');
 
     if(!strip) return;
 

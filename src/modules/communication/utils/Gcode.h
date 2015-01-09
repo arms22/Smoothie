@@ -22,7 +22,6 @@ class Gcode {
         ~Gcode();
 
         const char* get_command() const { return command; }
-        bool has_letter ( char letter ) const;
         float get_value ( char letter, char **ptr= nullptr ) const;
         int get_int ( char letter, char **ptr= nullptr ) const;
         uint32_t get_uint ( char letter, char **ptr= nullptr ) const;
@@ -37,10 +36,16 @@ class Gcode {
 
         struct {
             bool add_nl:1;
-            bool has_m:1;
-            bool has_g:1;
             bool accepted_by_module:1;
+            int  letter_bit:26;
         };
+
+        #define LETTER_BIT(letter)  (1 << ((letter) - 'A'))
+        inline bool has_letter(char c) const {
+          return ((letter_bit & LETTER_BIT( c )) != 0);
+        }
+        #define has_g   has_letter('G')
+        #define has_m   has_letter('M')
 
         StreamOutput* stream;
         string txt_after_ok;
