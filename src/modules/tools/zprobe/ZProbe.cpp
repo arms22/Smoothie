@@ -67,7 +67,6 @@ void ZProbe::on_module_loaded()
     register_for_event(ON_GCODE_RECEIVED);
 
     THEKERNEL->slow_ticker->attach( THEKERNEL->stepper->get_acceleration_ticks_per_second() , this, &ZProbe::acceleration_tick );
-    THEKERNEL->slow_ticker->attach( 5000 , this, &ZProbe::pinpoll_tick );
 }
 
 void ZProbe::on_config_reload(void *argument)
@@ -157,8 +156,11 @@ bool ZProbe::run_probe(int& steps, bool fast)
 
     // start acceration hrprocessing
     this->running = true;
+    Hook *hook = THEKERNEL->slow_ticker->attach( 5000 , this, &ZProbe::pinpoll_tick );
 
     bool r = wait_for_probe(steps);
+
+    THEKERNEL->slow_ticker->detach(hook);
     this->running = false;
     return r;
 }
@@ -297,8 +299,6 @@ uint32_t ZProbe::acceleration_tick(uint32_t dummy)
 
 uint32_t ZProbe::pinpoll_tick(uint32_t dummy)
 {
-    if(!this->running) return(0); // nothing to do
-
     // if the touchprobe is active...
     if( this->pin.get() ) {
         //...increase debounce counter...
