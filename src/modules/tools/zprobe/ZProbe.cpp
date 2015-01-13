@@ -326,6 +326,8 @@ uint32_t ZProbe::pinpoll_tick(uint32_t dummy)
         // The probe was not hit yet, reset debounce counter
         debounce = 0;
     }
+
+    return 0;
 }
 
 void ZProbe::accelerate(int c)

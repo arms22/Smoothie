@@ -138,7 +138,6 @@ void Endstops::on_module_loaded()
     register_for_event(ON_SET_PUBLIC_DATA);
 
     THEKERNEL->slow_ticker->attach( THEKERNEL->stepper->get_acceleration_ticks_per_second() , this, &Endstops::acceleration_tick );
-    THEKERNEL->slow_ticker->attach( 1000, this, &Endstops::pinpoll_tick );
 
     // Settings
     this->on_config_reload(this);
@@ -235,20 +234,16 @@ static const char *endstop_names[]= {"min_x", "min_y", "min_z", "max_x", "max_y"
 
 void Endstops::on_idle(void *argument)
 {
+    debounce_pins(1);
+
     if(this->status == LIMIT_TRIGGERED) {
         // if we were in limit triggered see if it has been cleared
         for( int c = X_AXIS; c <= Z_AXIS; c++ ) {
-            if(this->limit_enable[c]) {
-                std::array<int, 2> minmax{{0, 3}};
-                // check min and max endstops
-                for (int i : minmax) {
-                    int n= c+i;
-                    if(this->triggered[n]) {
-                        // still triggered, so exit
-                        bounce_cnt= 0;
-                        return;
-                    }
-                }
+        // check min or max endstops
+            if(this->limit_enable[c] && this->triggered[c]) {
+                // still triggered, so exit
+                bounce_cnt= 0;
+                return;
             }
         }
         if(++bounce_cnt > 10) { // can use less as it calls on_idle in between
@@ -264,18 +259,14 @@ void Endstops::on_idle(void *argument)
 
     for( int c = X_AXIS; c <= Z_AXIS; c++ ) {
         if(this->limit_enable[c] && STEPPER[c]->is_moving()) {
-            std::array<int, 2> minmax{{0, 3}};
             // check min and max endstops
-            for (int i : minmax) {
-                int n= c+i;
-                if(this->triggered[n]) {
-                    // endstop triggered
-                    THEKERNEL->streams->printf("Limit switch %s was hit - reset or M999 required\n", endstop_names[n]);
-                    this->status= LIMIT_TRIGGERED;
-                    // disables heaters and motors, ignores incoming Gcode and flushes block queue
-                    THEKERNEL->call_event(ON_HALT, nullptr);
-                    return;
-                }
+            if(this->triggered[c]) {
+                // endstop triggered
+                THEKERNEL->streams->printf("Limit switch %s was hit - reset or M999 required\n", endstop_names[c + this->home_direction[c] ? 0 : 3]);
+                this->status= LIMIT_TRIGGERED;
+                // disables heaters and motors, ignores incoming Gcode and flushes block queue
+                THEKERNEL->call_event(ON_HALT, nullptr);
+                return;
             }
         }
     }
@@ -289,7 +280,7 @@ void Endstops::back_off_home(char axes_to_move)
     for( int c = X_AXIS; c <= Z_AXIS; c++ ) {
         if( ((axes_to_move >> c ) & 1) == 0) continue; // only for axes we asked to move
         if(this->limit_enable[c]) {
-            if( !this->triggered[c + (this->home_direction[c] ? 0 : 3)] ) continue; // if not triggered no need to move off
+            if( !this->triggered[c] ) continue; // if not triggered no need to move off
 
             // Move off of the endstop using a regular relative move
             char buf[32];
@@ -520,6 +511,7 @@ void Endstops::do_homing_corexy(char axes_to_move)
 
 void Endstops::home(char axes_to_move)
 {
+    Hook *hook = THEKERNEL->slow_ticker->attach( 5000 , this, &Endstops::pinpoll_tick );
     if (is_corexy){
         // corexy/HBot homing
         do_homing_corexy(axes_to_move);
@@ -527,6 +519,7 @@ void Endstops::home(char axes_to_move)
         // cartesian/delta homing
         do_homing_cartesian(axes_to_move);
     }
+    THEKERNEL->slow_ticker->detach( hook );
 }
 
 // Start homing sequences by response to GCode commands
@@ -725,45 +718,47 @@ uint32_t Endstops::acceleration_tick(uint32_t dummy)
     return 0;
 }
 
+void Endstops::debounce_pins(unsigned int inc)
+{
+    for ( int c = X_AXIS; c <= Z_AXIS; c++ ) {
+        if ( this->pins[c + (this->home_direction[c] ? 0 : 3)].get() ) {
+            if ( debounce[c] < debounce_count ) {
+                debounce[c] += inc;
+            } else {
+                triggered[c] = true;
+            }
+        } else {
+            debounce[c] = 0;
+            triggered[c] = false;
+        }
+    }
+}
+
 // Poll the endstop pins state
 uint32_t Endstops::pinpoll_tick(uint32_t dummy)
 {
-    for ( int c = 0; c < 6; c++ ) {
-        if(this->pins[c].connected()){
-            if ( this->pins[c].get() ) {
-                if ( debounce[c] < debounce_count ) {
-                    debounce[c]++;
-                } else {
-                    triggered[c] = true;
+    debounce_pins(debounce_count >> 4);
+
+    if(axes_to_homing & 0x80){
+        char axis = axes_to_homing & 0x7f;
+        if ( this->triggered[axis] ) {
+        // turn both off if running
+            if (STEPPER[X_AXIS]->is_moving()) STEPPER[X_AXIS]->move(0, 0);
+            if (STEPPER[Y_AXIS]->is_moving()) STEPPER[Y_AXIS]->move(0, 0);
+            axes_to_homing = 0;
+        }
+    }else if(axes_to_homing){
+        for ( int c = X_AXIS; c <= Z_AXIS; c++ ) {
+            if ( ( axes_to_homing >> c ) & 1 ) {
+                if ( this->triggered[c] ) {
+                    if (STEPPER[c]->is_moving()) STEPPER[c]->move(0, 0);
+                    axes_to_homing &= ~(1<<c); // no need to check it again
                 }
-            } else {
-                debounce[c] = 0;
-                triggered[c] = false;
             }
         }
     }
 
-    if((this->status == MOVING_TO_ENDSTOP_FAST) ||
-        (this->status == MOVING_TO_ENDSTOP_SLOW)){
-        if(axes_to_homing & 0x80){
-            char axis = axes_to_homing & 0x7f;
-            if ( this->triggered[axis + (this->home_direction[axis] ? 0 : 3)] ) {
-                // turn both off if running
-                if (STEPPER[X_AXIS]->is_moving()) STEPPER[X_AXIS]->move(0, 0);
-                if (STEPPER[Y_AXIS]->is_moving()) STEPPER[Y_AXIS]->move(0, 0);
-                axes_to_homing = 0;
-            }
-        }else if(axes_to_homing){
-            for ( int c = X_AXIS; c <= Z_AXIS; c++ ) {
-                if ( ( axes_to_homing >> c ) & 1 ) {
-                    if ( this->triggered[c + (this->home_direction[c] ? 0 : 3)] ) {
-                        if (STEPPER[c]->is_moving()) STEPPER[c]->move(0, 0);
-                        axes_to_homing &= ~(1<<c); // no need to check it again
-                    }
-                }
-            }
-        }
-    }
+    return 0;
 }
 
 void Endstops::on_get_public_data(void* argument){

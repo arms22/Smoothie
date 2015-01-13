@@ -36,13 +36,14 @@ class Endstops : public Module{
         void on_get_public_data(void* argument);
         void on_set_public_data(void* argument);
         void on_idle(void *argument);
+        void debounce_pins(unsigned int inc);
 
         float homing_position[3];
         float home_offset[3];
         uint8_t homing_order;
         std::bitset<3> home_direction;
         std::bitset<3> limit_enable;
-        std::bitset<6> triggered;
+        std::bitset<3> triggered;
 
         unsigned int  debounce_count;
         float  retract_mm[3];
@@ -60,7 +61,7 @@ class Endstops : public Module{
             volatile char status:3;
         };
         char axes_to_homing;
-        unsigned int debounce[6];
+        unsigned int debounce[3];
 };
 
 #endif

@@ -56,17 +56,17 @@ class SlowTicker : public Module{
             __disable_irq();
             this->max_frequency = 0;
             for(vector<Hook*>::iterator it = this->hooks.begin(); it != this->hooks.end();){
-                if(it == hook){
+                if(*it == hook){
                     it = this->hooks.erase(it);
                 }else{
-                    uint32_t frequency = (SystemCoreClock/4)*it->interval;
-                    if( ( frequency > this->max_frequency ){
+                    uint32_t frequency = (SystemCoreClock/4)*(*it)->interval;
+                    if( frequency > this->max_frequency ){
                         this->max_frequency = frequency;
                     }
                     it++;
                 }
             }
-            this->set_frequency(frequency);
+            this->set_frequency(this->max_frequency);
             __enable_irq();
         }
 
