@@ -221,25 +221,25 @@ gamma_max                                    194.050          #
 alpha_fast_homing_rate_mm_s                  50               # homing feedrates in mm/second
 beta_fast_homing_rate_mm_s                   50               #
 gamma_fast_homing_rate_mm_s                  50               #
-alpha_slow_homing_rate_mm_s                  5                #
-beta_slow_homing_rate_mm_s                   5                #
-gamma_slow_homing_rate_mm_s                  5
+alpha_slow_homing_rate_mm_s                  2                #
+beta_slow_homing_rate_mm_s                   2                #
+gamma_slow_homing_rate_mm_s                  2
 
-alpha_homing_retract_mm                      0                # retract/bounce distance after homing in mm
-beta_homing_retract_mm                       0                #
-gamma_homing_retract_mm                      0                #
+alpha_homing_retract_mm                      2                # retract/bounce distance after homing in mm
+beta_homing_retract_mm                       2                #
+gamma_homing_retract_mm                      2                #
 
 alpha_trim                                   0                 # software trim for alpha stepper endstop (in mm)
 beta_trim                                    0                 # software trim for beta stepper endstop (in mm)
 gamma_trim                                   0                 # software trim for gamma stepper endstop (in mm)
 
-#endstop_debounce_count                       100              # uncomment if you get noise on your endstops
+#endstop_debounce_count                       1              # uncomment if you get noise on your endstops
 
 # optional Z probe
 zprobe.enable                                true            # set to true to enable a zprobe
 zprobe.probe_pin                             2.12!^          # pin probe is attached to if NC remove the !
-zprobe.slow_feedrate                         5               # mm/sec probe feed rate
-zprobe.debounce_count                        20              # set if noisy
+zprobe.slow_feedrate                         2               # mm/sec probe feed rate
+zprobe.debounce_count                        0               # set if noisy
 zprobe.fast_feedrate                         50              # move feedrate mm/sec
 zprobe.probe_height                          5               # how much above bed to start probe
 #gamma_min_endstop                           nc              # normally 1.28. Change to nc to prevent conflict,

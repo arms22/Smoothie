@@ -22,6 +22,7 @@ class Endstops : public Module{
         void on_gcode_received(void* argument);
         void on_config_reload(void* argument);
         uint32_t acceleration_tick(uint32_t dummy);
+        uint32_t pinpoll_tick(uint32_t dummy);
 
     private:
         void home(char axes_to_move);
@@ -41,6 +42,7 @@ class Endstops : public Module{
         uint8_t homing_order;
         std::bitset<3> home_direction;
         std::bitset<3> limit_enable;
+        std::bitset<6> triggered;
 
         unsigned int  debounce_count;
         float  retract_mm[3];
@@ -57,6 +59,8 @@ class Endstops : public Module{
             uint8_t bounce_cnt:4;
             volatile char status:3;
         };
+        char axes_to_homing;
+        unsigned int debounce[6];
 };
 
 #endif

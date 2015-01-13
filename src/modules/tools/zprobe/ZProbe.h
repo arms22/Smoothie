@@ -30,6 +30,7 @@ public:
     void on_config_reload(void *argument);
     void on_gcode_received(void *argument);
     uint32_t acceleration_tick(uint32_t dummy);
+    uint32_t pinpoll_tick(uint32_t dummy);
 
     bool wait_for_probe(int& steps);
     bool run_probe(int& steps, bool fast= false);
@@ -56,10 +57,13 @@ private:
     float max_z;
     volatile struct {
         volatile bool running:1;
+        volatile bool touched:1;
         bool is_delta:1;
     };
 
     Pin pin;
+    unsigned int debounce;
+    int steps_on_touch;
     uint8_t debounce_count;
     std::vector<LevelingStrategy*> strategies;
 };

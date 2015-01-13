@@ -67,6 +67,7 @@ void ZProbe::on_module_loaded()
     register_for_event(ON_GCODE_RECEIVED);
 
     THEKERNEL->slow_ticker->attach( THEKERNEL->stepper->get_acceleration_ticks_per_second() , this, &ZProbe::acceleration_tick );
+    THEKERNEL->slow_ticker->attach( 5000 , this, &ZProbe::pinpoll_tick );
 }
 
 void ZProbe::on_config_reload(void *argument)
@@ -123,40 +124,16 @@ void ZProbe::on_config_reload(void *argument)
 
 bool ZProbe::wait_for_probe(int& steps)
 {
-    unsigned int debounce = 0;
-    while(true) {
+    touched = false;
+    while(!touched) {
         THEKERNEL->call_event(ON_IDLE);
         // if no stepper is moving, moves are finished and there was no touch
         if( !STEPPER[Z_AXIS]->is_moving() && (!is_delta || (!STEPPER[Y_AXIS]->is_moving() && !STEPPER[Z_AXIS]->is_moving())) ) {
             return false;
         }
-
-        // if the touchprobe is active...
-        if( this->pin.get() ) {
-            //...increase debounce counter...
-            if( debounce < debounce_count) {
-                // ...but only if the counter hasn't reached the max. value
-                debounce++;
-            } else {
-                // ...otherwise stop the steppers, return its remaining steps
-                if(STEPPER[Z_AXIS]->is_moving()){
-                    steps= STEPPER[Z_AXIS]->get_stepped();
-                    STEPPER[Z_AXIS]->move(0, 0);
-                }
-                if(is_delta) {
-                    for( int i = X_AXIS; i <= Y_AXIS; i++ ) {
-                        if ( STEPPER[i]->is_moving() ) {
-                            STEPPER[i]->move(0, 0);
-                        }
-                    }
-                }
-                return true;
-            }
-        } else {
-            // The probe was not hit yet, reset debounce counter
-            debounce = 0;
-        }
     }
+    steps = steps_on_touch;
+    return true;
 }
 
 // single probe and report amount moved
@@ -316,6 +293,39 @@ uint32_t ZProbe::acceleration_tick(uint32_t dummy)
     }
 
     return 0;
+}
+
+uint32_t ZProbe::pinpoll_tick(uint32_t dummy)
+{
+    if(!this->running) return(0); // nothing to do
+
+    // if the touchprobe is active...
+    if( this->pin.get() ) {
+        //...increase debounce counter...
+        if( debounce < debounce_count) {
+            // ...but only if the counter hasn't reached the max. value
+            debounce++;
+        } else {
+            // ...otherwise stop the steppers, return its remaining steps
+            if(!touched) {
+                if(STEPPER[Z_AXIS]->is_moving()){
+                    steps_on_touch = STEPPER[Z_AXIS]->get_stepped();
+                    STEPPER[Z_AXIS]->move(0, 0);
+                }
+                if(is_delta) {
+                    for( int i = X_AXIS; i <= Y_AXIS; i++ ) {
+                        if ( STEPPER[i]->is_moving() ) {
+                            STEPPER[i]->move(0, 0);
+                        }
+                    }
+                }
+                touched = true;
+            }
+        }
+    } else {
+        // The probe was not hit yet, reset debounce counter
+        debounce = 0;
+    }
 }
 
 void ZProbe::accelerate(int c)
