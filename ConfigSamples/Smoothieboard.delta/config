@@ -7,7 +7,7 @@ mm_per_arc_segment                           0.5              # Arcs are cut int
                                                               # higher values mean faster computation
 mm_per_line_segment                          0.1              # Lines can be cut into segments ( not useful with cartesian
                                                               # coordinates robots ).
-delta_segments_per_second                    0                # for deltas only same as in Marlin/Delta, set to 0 to disable
+delta_segments_per_second                    800              # for deltas only same as in Marlin/Delta, set to 0 to disable
                                                               # and use mm_per_line_segment
 
 
@@ -22,7 +22,7 @@ arm_radius                                   84.8458          # this is the hori
                                                               # when the effector is centered
 
 # Planner module configuration : Look-ahead and acceleration configuration
-planner_queue_size                           32               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
+planner_queue_size                           48               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
 acceleration                                 3000             # Acceleration in mm/second/second.
 acceleration_ticks_per_second                1000             # Number of times per second the speed is updated
 junction_deviation                           0.05             # Similar to the old "max_jerk", in millimeters,
