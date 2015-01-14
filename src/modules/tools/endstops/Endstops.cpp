@@ -113,6 +113,7 @@ enum{
     MOVING_TO_ENDSTOP_FAST, // homing move
     MOVING_BACK,            // homing move
     MOVING_TO_ENDSTOP_SLOW, // homing move
+    READY_TO_HOMING,
     NOT_HOMING,
     BACK_OFF_HOME,
     MOVE_TO_ORIGIN,
@@ -123,6 +124,7 @@ Endstops::Endstops()
 {
     this->status = NOT_HOMING;
     home_offset[0] = home_offset[1] = home_offset[2] = 0.0F;
+    debounce[0] = debounce[1] = debounce[2] = 0;
 }
 
 void Endstops::on_module_loaded()
@@ -136,8 +138,6 @@ void Endstops::on_module_loaded()
     register_for_event(ON_GCODE_RECEIVED);
     register_for_event(ON_GET_PUBLIC_DATA);
     register_for_event(ON_SET_PUBLIC_DATA);
-
-    THEKERNEL->slow_ticker->attach( THEKERNEL->stepper->get_acceleration_ticks_per_second() , this, &Endstops::acceleration_tick );
 
     // Settings
     this->on_config_reload(this);
@@ -234,7 +234,9 @@ static const char *endstop_names[]= {"min_x", "min_y", "min_z", "max_x", "max_y"
 
 void Endstops::on_idle(void *argument)
 {
-    debounce_pins(1);
+    if(this->status >= NOT_HOMING) {
+        debounce_pins(1);
+    }
 
     if(this->status == LIMIT_TRIGGERED) {
         // if we were in limit triggered see if it has been cleared
@@ -400,9 +402,6 @@ void Endstops::do_homing_cartesian(char axes_to_move)
             }
         }
     }
-
-    // Homing is done
-    this->status = NOT_HOMING;
 }
 
 void Endstops::wait_for_homed_corexy(int axis)
@@ -504,14 +503,13 @@ void Endstops::do_homing_corexy(char axes_to_move)
     if (axes_to_move & 0x04) { // move Z
         do_homing_cartesian(0x04); // just home normally for Z
     }
-
-    // Homing is done
-    this->status = NOT_HOMING;
 }
 
 void Endstops::home(char axes_to_move)
 {
-    Hook *hook = THEKERNEL->slow_ticker->attach( 5000 , this, &Endstops::pinpoll_tick );
+    this->status = READY_TO_HOMING;
+    Hook *pol = THEKERNEL->slow_ticker->attach( 5000 , this, &Endstops::pinpoll_tick );
+    Hook *acc = THEKERNEL->slow_ticker->attach( THEKERNEL->stepper->get_acceleration_ticks_per_second() , this, &Endstops::acceleration_tick );
     if (is_corexy){
         // corexy/HBot homing
         do_homing_corexy(axes_to_move);
@@ -519,7 +517,9 @@ void Endstops::home(char axes_to_move)
         // cartesian/delta homing
         do_homing_cartesian(axes_to_move);
     }
-    THEKERNEL->slow_ticker->detach( hook );
+    THEKERNEL->slow_ticker->detach( pol );
+    THEKERNEL->slow_ticker->detach( acc );
+    this->status = NOT_HOMING;
 }
 
 // Start homing sequences by response to GCode commands
@@ -696,7 +696,7 @@ void Endstops::on_gcode_received(void *argument)
 // Called periodically to change the speed to match acceleration
 uint32_t Endstops::acceleration_tick(uint32_t dummy)
 {
-    if(this->status >= NOT_HOMING) return(0); // nothing to do, only do this when moving for homing sequence
+    if(this->status >= READY_TO_HOMING) return(0); // nothing to do, only do this when moving for homing sequence
 
     // foreach stepper that is moving
     for ( int c = X_AXIS; c <= Z_AXIS; c++ ) {
@@ -728,8 +728,11 @@ void Endstops::debounce_pins(unsigned int inc)
                 triggered[c] = true;
             }
         } else {
-            debounce[c] = 0;
-            triggered[c] = false;
+            if(debounce[c] < inc) {
+                triggered[c] = false;
+            }else{
+                debounce[c] -= inc;
+            }
         }
     }
 }
@@ -737,7 +740,7 @@ void Endstops::debounce_pins(unsigned int inc)
 // Poll the endstop pins state
 uint32_t Endstops::pinpoll_tick(uint32_t dummy)
 {
-    debounce_pins(debounce_count >> 4);
+    debounce_pins(debounce_count >> 2);
 
     if(axes_to_homing & 0x80){
         char axis = axes_to_homing & 0x7f;
