@@ -39,14 +39,17 @@ class SlowTicker : public Module{
             hook->interval = int(floor((SystemCoreClock/4)/frequency));
             hook->attach(optr, fptr);
             hook->countdown = hook->interval;
+            hook->adjusted = false;
 
             // to avoid race conditions we must stop the interupts before updating this non thread safe vector
             __disable_irq();
             if( frequency > this->max_frequency ){
                 this->max_frequency = frequency;
                 this->set_frequency(frequency);
+                this->hooks.insert(this->hooks.begin(), hook);
+            }else{
+                this->hooks.push_back(hook);
             }
-            this->hooks.push_back(hook);
             __enable_irq();
             return hook;
         }

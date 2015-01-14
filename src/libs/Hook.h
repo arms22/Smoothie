@@ -9,6 +9,7 @@ class Hook : public FPointer {
         Hook();
         int     interval;
         int     countdown;
+        bool    adjusted;
 };
 
 #endif

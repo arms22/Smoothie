@@ -63,6 +63,7 @@ void SlowTicker::set_frequency( int frequency ){
 
 // The actual interrupt being called by the timer, this is where work is done
 void SlowTicker::tick(){
+    uint32_t called = 0;
 
     // Call all hooks that need to be called ( bresenham )
     for (uint32_t i=0; i<this->hooks.size(); i++){
@@ -72,6 +73,12 @@ void SlowTicker::tick(){
         {
             hook->countdown += hook->interval;
             hook->call();
+
+            if (called && !hook->adjusted && (hook->interval > this->interval)) {
+                hook->countdown += this->interval * called;
+                hook->adjusted = true;
+            }
+            called++;
         }
     }
 
