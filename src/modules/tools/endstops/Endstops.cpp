@@ -335,7 +335,7 @@ void Endstops::wait_for_homed(char axes_to_move)
     unsigned int debounce[3] = {0, 0, 0};
     while (running) {
         running = false;
-        THEKERNEL->call_event(ON_IDLE);
+        //THEKERNEL->call_event(ON_IDLE);
         for ( int c = X_AXIS; c <= Z_AXIS; c++ ) {
             if ( ( axes_to_move >> c ) & 1 ) {
                 if ( this->pins[c + (this->home_direction[c] ? 0 : 3)].get() ) {

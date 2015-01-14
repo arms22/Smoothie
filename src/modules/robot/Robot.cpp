@@ -683,9 +683,13 @@ void Robot::append_milestone( float target[], float rate_mm_s )
 // Append a move to the queue ( cutting it into segments if needed )
 void Robot::append_line(Gcode *gcode, float target[], float rate_mm_s )
 {
+    float deltas[3];
+    for (int axis = X_AXIS; axis <= Z_AXIS; axis++){
+        deltas[axis] = target[axis] - last_milestone[axis];
+    }
 
     // Find out the distance for this gcode
-    gcode->millimeters_of_travel = powf( target[X_AXIS] - this->last_milestone[X_AXIS], 2 ) +  powf( target[Y_AXIS] - this->last_milestone[Y_AXIS], 2 ) +  powf( target[Z_AXIS] - this->last_milestone[Z_AXIS], 2 );
+    gcode->millimeters_of_travel = powf( deltas[X_AXIS], 2 ) +  powf( deltas[Y_AXIS], 2 ) +  powf( deltas[Z_AXIS], 2 );
 
     // We ignore non-moves ( for example, extruder moves are not XYZ moves )
     if( gcode->millimeters_of_travel < 1e-8F ) {
@@ -702,20 +706,20 @@ void Robot::append_line(Gcode *gcode, float target[], float rate_mm_s )
     // In delta robots either mm_per_line_segment can be used OR delta_segments_per_second The latter is more efficient and avoids splitting fast long lines into very small segments, like initial z move to 0, it is what Johanns Marlin delta port does
     uint16_t segments = 1;
 
-    if((abs(target[X_AXIS] - this->last_milestone[X_AXIS]) > 0.01f) ||
-        (abs(target[Y_AXIS] - this->last_milestone[Y_AXIS]) > 0.01f)) {
-    if(this->delta_segments_per_second > 1.0F) {
-        // enabled if set to something > 1, it is set to 0.0 by default
-        // segment based on current speed and requested segments per second
-        // the faster the travel speed the fewer segments needed
-        // NOTE rate is mm/sec and we take into account any speed override
-        float seconds = gcode->millimeters_of_travel / rate_mm_s;
-        segments = max(1, ceil(this->delta_segments_per_second * seconds));
-    } else {
-        if(this->mm_per_line_segment == 0.0F) {
-                // don't split it up
+    if((abs(deltas[X_AXIS]) > 0.001f) ||
+        (abs(deltas[Y_AXIS]) > 0.001f)) {
+        if(this->delta_segments_per_second > 1.0F) {
+            // enabled if set to something > 1, it is set to 0.0 by default
+            // segment based on current speed and requested segments per second
+            // the faster the travel speed the fewer segments needed
+            // NOTE rate is mm/sec and we take into account any speed override
+            float seconds = gcode->millimeters_of_travel / rate_mm_s;
+            segments = ceil(this->delta_segments_per_second * seconds);
         } else {
-                segments = max(1, ceil( gcode->millimeters_of_travel / this->mm_per_line_segment));
+            if(this->mm_per_line_segment == 0.0F) {
+            // don't split it up
+            } else {
+                segments = ceil( gcode->millimeters_of_travel / this->mm_per_line_segment);
             }
         }
     }
@@ -729,7 +733,7 @@ void Robot::append_line(Gcode *gcode, float target[], float rate_mm_s )
         // How far do we move each segment?
         for (int i = X_AXIS; i <= Z_AXIS; i++) {
             segment_start[i] = last_milestone[i];
-            segment_delta[i] = (target[i] - segment_start[i]) / segments;
+            segment_delta[i] = deltas[i] / segments;
         }
 
         // segment 0 is already done - it's the end point of the previous move so we start at segment 1
