@@ -135,7 +135,7 @@ bool ZProbe::wait_for_probe(int& steps)
 {
     unsigned int debounce = 0;
     while(true) {
-        THEKERNEL->call_event(ON_IDLE);
+        //THEKERNEL->call_event(ON_IDLE);
         if(THEKERNEL->is_halted()){
             // aborted by kill
             return false;

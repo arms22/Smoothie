@@ -382,7 +382,7 @@ bool Endstops::wait_for_homed(char axes_to_move)
     unsigned int debounce[3] = {0, 0, 0};
     while (running) {
         running = false;
-        THEKERNEL->call_event(ON_IDLE);
+        //THEKERNEL->call_event(ON_IDLE);
 
         // check if on_halt (eg kill)
         if(THEKERNEL->is_halted()) return false;
