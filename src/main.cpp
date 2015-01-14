@@ -8,6 +8,7 @@
 #include "libs/Kernel.h"
 
 #include "modules/tools/laser/Laser.h"
+#include "modules/tools/spindle/Spindle.h"
 #include "modules/tools/extruder/ExtruderMaker.h"
 #include "modules/tools/temperaturecontrol/TemperatureControlPool.h"
 #include "modules/tools/endstops/Endstops.h"
@@ -28,6 +29,7 @@
 #include "Config.h"
 #include "checksumm.h"
 #include "ConfigValue.h"
+#include "StepTicker.h"
 
 // #include "libs/ChaNFSSD/SDFileSystem.h"
 #include "libs/nuts_bolts.h"
@@ -55,6 +57,7 @@
 #define second_usb_serial_enable_checksum  CHECKSUM("second_usb_serial_enable")
 #define disable_msd_checksum  CHECKSUM("msd_disable")
 #define disable_leds_checksum  CHECKSUM("leds_disable")
+#define dfu_enable_checksum  CHECKSUM("dfu_enable")
 
 // Watchdog wd(5000000, WDT_MRI);
 
@@ -70,7 +73,6 @@ USBMSD msc __attribute__ ((section ("AHBSRAM0"))) (&u, &sd);
 #else
 USBMSD *msc= NULL;
 #endif
-DFU dfu __attribute__ ((section ("AHBSRAM0"))) (&u);
 
 SDFAT mounter __attribute__ ((section ("AHBSRAM0"))) ("sd", &sd);
 
@@ -82,6 +84,11 @@ GPIO leds[5] = {
     GPIO(P4_28)
 };
 
+// debug pins, only used if defined in src/makefile
+#ifdef STEPTICKER_DEBUG_PIN
+GPIO stepticker_debug_pin(STEPTICKER_DEBUG_PIN);
+#endif
+
 void init() {
 
     // Default pins to low status
@@ -89,6 +96,11 @@ void init() {
         leds[i].output();
         leds[i]= 0;
     }
+
+#ifdef STEPTICKER_DEBUG_PIN
+    stepticker_debug_pin.output();
+    stepticker_debug_pin= 0;
+#endif
 
     Kernel* kernel = new Kernel();
 
@@ -99,9 +111,12 @@ void init() {
     //some boards don't have leds.. TOO BAD!
     kernel->use_leds= !kernel->config->value( disable_leds_checksum )->by_default(false)->as_bool();
 
+    bool sdok= (sd.disk_initialize() == 0);
+    if(!sdok) kernel->streams->printf("SDCard is disabled\r\n");
+
 #ifdef DISABLEMSD
     // attempt to be able to disable msd in config
-    if(!kernel->config->value( disable_msd_checksum )->by_default(false)->as_bool()){
+    if(sdok && !kernel->config->value( disable_msd_checksum )->by_default(false)->as_bool()){
         // HACK to zero the memory USBMSD uses as it and its objects seem to not initialize properly in the ctor
         size_t n= sizeof(USBMSD);
         void *v = AHB0.alloc(n);
@@ -113,7 +128,6 @@ void init() {
     }
 #endif
 
-    bool sdok= (sd.disk_initialize() == 0);
 
     // Create and add main modules
     kernel->add_module( new SimpleShell() );
@@ -141,10 +155,15 @@ void init() {
     // Note order is important here must be after extruder so Tn as a parameter will get executed first
     TemperatureControlPool *tp= new TemperatureControlPool();
     tp->load_tools();
-    delete tp;
+    kernel->temperature_control_pool= tp;
+    #else
+    kernel->temperature_control_pool= new TemperatureControlPool(); // so we can get just an empty temperature control array
     #endif
     #ifndef NO_TOOLS_LASER
     kernel->add_module( new Laser() );
+    #endif
+    #ifndef NO_TOOLS_SPINDLE
+    kernel->add_module( new Spindle() );
     #endif
     #ifndef NO_UTILS_PANEL
     kernel->add_module( new Panel() );
@@ -179,9 +198,12 @@ void init() {
 
     kernel->add_module( &usbserial );
     if( kernel->config->value( second_usb_serial_enable_checksum )->by_default(false)->as_bool() ){
-        kernel->add_module( new USBSerial(&u) );
+        kernel->add_module( new(AHB0) USBSerial(&u) );
     }
-    kernel->add_module( &dfu );
+
+    if( kernel->config->value( dfu_enable_checksum )->by_default(false)->as_bool() ){
+        kernel->add_module( new(AHB0) DFU(&u));
+    }
     kernel->add_module( &u );
 
     // clear up the config cache to save some memory
@@ -210,6 +232,8 @@ void init() {
             fclose(fp);
         }
     }
+
+    THEKERNEL->step_ticker->start();
 }
 
 int main()
