@@ -7,7 +7,7 @@ mm_per_arc_segment                           0.5              # Arcs are cut int
                                                               # higher values mean faster computation
 mm_per_line_segment                          0.1              # Lines can be cut into segments ( not useful with cartesian
                                                               # coordinates robots ).
-delta_segments_per_second                    800              # for deltas only same as in Marlin/Delta, set to 0 to disable
+delta_segments_per_second                    200              # for deltas only same as in Marlin/Delta, set to 0 to disable
                                                               # and use mm_per_line_segment
 
 
@@ -18,7 +18,7 @@ beta_steps_per_mm                            200              # Steps per mm for
 gamma_steps_per_mm                           200              # Steps per mm for gamma stepper
 
 arm_length                                   190.0            # this is the length of an arm from hinge to hinge
-arm_radius                                   84.8458          # this is the horizontal distance from hinge to hinge
+arm_radius                                   84.9708          # this is the horizontal distance from hinge to hinge
                                                               # when the effector is centered
 
 # Planner module configuration : Look-ahead and acceleration configuration
@@ -137,11 +137,12 @@ temperature_control.hotend.designator        T                #
 #temperature_control.hotend.max_temp         300              # Set maximum temperature - Will prevent heating above 300 by default
 #temperature_control.hotend.min_temp         0                # Set minimum temperature - Will prevent heating below 0 by default
 
-temperature_control.hotend.p_factor          16.6777          # permanently set the PID values after an auto pid
-temperature_control.hotend.i_factor          1.7933           #
-temperature_control.hotend.d_factor          38.7756          #
+temperature_control.hotend.p_factor          19.1716          # permanently set the PID values after an auto pid
+temperature_control.hotend.i_factor          2.00225          #
+temperature_control.hotend.d_factor          45.892           #
 
-temperature_control.hotend.max_pwm           200              # max pwm, 64 is a good value if driving a 12v resistor with 24v.
+temperature_control.hotend.max_pwm           128              # max pwm, 64 is a good value if driving a 12v resistor with 24v.
+temperature_control.hotend.readings_per_second      60
 
 # Hotend2 temperature control configuration
 #temperature_control.hotend2.enable            true             # Whether to activate this ( "hotend" ) module at all.
@@ -171,10 +172,11 @@ temperature_control.bed.beta                 4100             # NTCS0603E3104FXT
 temperature_control.bed.set_m_code           140              #
 temperature_control.bed.set_and_wait_m_code  190              #
 temperature_control.bed.designator           B                #
-temperature_control.bed.p_factor             35.2293          # permanenetly set the PID values after an auto pid
-temperature_control.bed.i_factor             3.0239           #
-temperature_control.bed.d_factor             102.605          #
+temperature_control.bed.p_factor             239.295          # permanenetly set the PID values after an auto pid
+temperature_control.bed.i_factor             27.6641          #
+temperature_control.bed.d_factor             517.474          #
 temperature_control.bed.max_pwm              220              # override max pwm, 64 is a good value if driving a 12v resistor with 24v.
+temperature_control.bed.readings_per_second      60
 
 #temperature_control.bed.bang_bang            false           # set to true to use bang bang control rather than PID
 #temperature_control.bed.hysteresis           2.0             # set to the temperature in degrees C to use as hysteresis
