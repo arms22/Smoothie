@@ -263,7 +263,7 @@ void TemperatureControl::on_gcode_execute(void *argument)
             && gcode->has_letter('S') && this->active) {
             float v = gcode->get_value('S');
 
-            if (v == 0.0) {
+            if (v <= 0.0) {
                 this->target_temperature = UNDEFINED;
                 this->heater_pin.set((this->o = 0));
             } else {
@@ -335,7 +335,7 @@ void TemperatureControl::set_desired_temperature(float desired_temperature)
         desired_temperature = preset2;
 
     target_temperature = desired_temperature;
-    if (desired_temperature == 0.0)
+    if (desired_temperature <= 0.0)
         heater_pin.set((this->o = 0));
 }
 
@@ -364,8 +364,6 @@ uint32_t TemperatureControl::thermistor_read_tick(uint32_t dummy)
                 waiting = false;
             }
         }
-    } else {
-        heater_pin.set((this->o = 0));
     }
     last_reading = temperature;
     return 0;
