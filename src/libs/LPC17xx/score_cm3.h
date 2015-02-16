@@ -518,6 +518,17 @@ static __INLINE void __DSB()                      { __ASM volatile ("dsb"); }
 static __INLINE void __DMB()                      { __ASM volatile ("dmb"); }
 static __INLINE void __CLREX()                    { __ASM volatile ("clrex"); }
 
+static __INLINE uint32_t __get_PRIMASK(void)
+{
+  uint32_t result;
+  __ASM volatile ("MRS %0, primask" : "=r" (result) );
+  return(result);
+}
+
+static __INLINE void __set_PRIMASK(uint32_t priMask)
+{
+  __ASM volatile ("MSR primask, %0" : : "r" (priMask) );
+}
 
 #elif (defined (__TASKING__)) /*------------------ TASKING Compiler ---------------------*/
 /* TASKING carm specific functions */
