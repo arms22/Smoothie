@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <LPC17xx.h>
+#include "IRQ.h"
 
 #ifdef MBED
     #include <score_cm3.h>
@@ -514,7 +515,7 @@ uint32_t USBHAL::getSerialNumber(int length, uint32_t *buf) {
     typedef void (*IAP)(uint32_t*, uint32_t*);
     IAP iap = (IAP) IAP_LOCATION;
 
-    __disable_irq();
+    uint32_t primask = disableIRQ();
 
     command[0] = 58;
 //     iprintf("Getting Serial...\n");
@@ -527,7 +528,7 @@ uint32_t USBHAL::getSerialNumber(int length, uint32_t *buf) {
         }
     }
 
-    __enable_irq();
+    restoreIRQ(primask);
 
     return i;
 }
@@ -607,17 +608,17 @@ EP_STATUS USBHAL::endpointReadResult(uint8_t bEP, uint8_t * buffer, uint32_t *by
 
 //     iprintf("reading...\n");
 
-    __disable_irq();
+    uint32_t primask = disableIRQ();
     __ISB();
 
     if (can_transfer[endpoint])
     {
         can_transfer[endpoint]--;
-        __enable_irq();
+        restoreIRQ(primask);
         *bytesRead = endpointReadcore(bEP, buffer);
     }
     else {
-        __enable_irq();
+        restoreIRQ(primask);
         *bytesRead = 0;
     }
 //     epComplete &= ~EP(endpoint);
@@ -636,17 +637,17 @@ EP_STATUS USBHAL::endpointWrite(uint8_t bEP, uint8_t *data, uint32_t size)
     }
 
     do {
-        __disable_irq();
+        uint32_t primask = disableIRQ();
         __ISB();
 
         if (can_transfer[endpoint])
         {
             can_transfer[endpoint]--;
-            __enable_irq();
+            restoreIRQ(primask);
             endpointWritecore(bEP, data, size);
             return EP_PENDING;
         }
-        __enable_irq();
+        restoreIRQ(primask);
         endpointSetInterrupt(bEP, true);
     } while (1);
 }
@@ -793,12 +794,12 @@ bool USBHAL::endpointSetInterrupt(uint8_t bEP, bool enabled)
 
     if (enabled)
     {
-        __disable_irq();
+        uint32_t primask = disableIRQ();
         USBEpIntEn |= EP(endpoint);
         if (can_transfer[endpoint])
             endpointTriggerInterrupt(bEP);
 //             LPC_USB->USBEpIntSet = EP(endpoint);
-        __enable_irq();
+        restoreIRQ(primask);
     }
     else
     {

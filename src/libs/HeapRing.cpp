@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 
-#include "cmsis.h"
+#include "IRQ.h"
 
 /*
  * constructors
@@ -129,18 +129,18 @@ template<class kind> void HeapRing<kind>::consume_tail()
 
 template<class kind> bool HeapRing<kind>::is_full()
 {
-    __disable_irq();
+    uint32_t primask = disableIRQ();
     bool r = (next(head_i) == tail_i);
-    __enable_irq();
+    restoreIRQ(primask);
 
     return r;
 }
 
 template<class kind> bool HeapRing<kind>::is_empty()
 {
-    __disable_irq();
+    uint32_t primask = disableIRQ();
     bool r = (head_i == tail_i);
-    __enable_irq();
+    restoreIRQ(primask);
 
     return r;
 }
@@ -155,13 +155,13 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
     {
         if (length == 0)
         {
-            __disable_irq();
+            uint32_t primask = disableIRQ();
 
             if (is_empty()) // check again in case something was pushed
             {
                 head_i = tail_i = this->length = 0;
 
-                __enable_irq();
+                restoreIRQ(primask);
 
                 if (ring)
                     delete [] ring;
@@ -170,7 +170,7 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
                 return true;
             }
 
-            __enable_irq();
+            restoreIRQ(primask);
 
             return false;
         }
@@ -182,7 +182,7 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
         {
             kind* oldring = ring;
 
-            __disable_irq();
+            uint32_t primask = disableIRQ();
 
             if (is_empty()) // check again in case something was pushed while malloc did its thing
             {
@@ -190,7 +190,7 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
                 this->length = length;
                 head_i = tail_i = 0;
 
-                __enable_irq();
+                restoreIRQ(primask);
 
                 if (oldring)
                     delete [] oldring;
@@ -198,7 +198,7 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
                 return true;
             }
 
-            __enable_irq();
+            restoreIRQ(primask);
 
             delete [] newring;
         }
@@ -209,7 +209,7 @@ template<class kind> bool HeapRing<kind>::resize(unsigned int length)
 
 template<class kind> bool HeapRing<kind>::provide(kind* buffer, unsigned int length)
 {
-    __disable_irq();
+    uint32_t primask = disableIRQ();
 
     if (is_empty())
     {
@@ -221,7 +221,7 @@ template<class kind> bool HeapRing<kind>::provide(kind* buffer, unsigned int len
             this->length = length;
             head_i = tail_i = 0;
 
-            __enable_irq();
+            restoreIRQ(primask);
 
             if (oldring)
                 delete [] oldring;
@@ -229,7 +229,7 @@ template<class kind> bool HeapRing<kind>::provide(kind* buffer, unsigned int len
         }
     }
 
-    __enable_irq();
+    restoreIRQ(primask);
 
     return false;
 }
