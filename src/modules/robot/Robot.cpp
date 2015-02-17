@@ -398,6 +398,7 @@ void Robot::on_gcode_received(void *argument)
                 gcode->mark_as_taken();
                 check_max_actuator_speeds();
                 return;
+
             case 114: {
                 char buf[64];
                 int n = snprintf(buf, sizeof(buf), "C: X:%1.3f Y:%1.3f Z:%1.3f A:%1.3f B:%1.3f C:%1.3f ",
@@ -411,6 +412,25 @@ void Robot::on_gcode_received(void *argument)
                 gcode->mark_as_taken();
             }
             return;
+
+            case 120: { // push state
+                gcode->mark_as_taken();
+                bool b= this->absolute_mode;
+                saved_state_t s(this->feed_rate, this->seek_rate, b);
+                state_stack.push(s);
+            }
+            break;
+
+            case 121: // pop state
+                gcode->mark_as_taken();
+                if(!state_stack.empty()) {
+                    auto s= state_stack.top();
+                    state_stack.pop();
+                    this->feed_rate= std::get<0>(s);
+                    this->seek_rate= std::get<1>(s);
+                    this->absolute_mode= std::get<2>(s);
+                }
+                break;
 
             case 203: // M203 Set maximum feedrates in mm/sec
                 if (gcode->has_letter('X'))
@@ -526,23 +546,23 @@ void Robot::on_gcode_received(void *argument)
 
             case 665: { // M665 set optional arm solution variables based on arm solution.
                 gcode->mark_as_taken();
-                // the parameter args could be any letter except S so ask solution what options it supports
-                BaseSolution::arm_options_t options;
+                // the parameter args could be any letter each arm solution only accepts certain ones
+                BaseSolution::arm_options_t options= gcode->get_args();
+                options.erase('S'); // don't include the S
+                options.erase('U'); // don't include the U
+                if(options.size() > 0) {
+                    // set the specified options
+                    arm_solution->set_optional(options);
+                }
+                options.clear();
                 if(arm_solution->get_optional(options)) {
+                    // foreach optional value
                     for(auto &i : options) {
-                        // foreach optional value
-                        char c = i.first;
-                        if(gcode->has_letter(c)) { // set new value
-                            i.second = gcode->get_value(c);
-                        }
                         // print all current values of supported options
                         gcode->stream->printf("%c: %8.4f ", i.first, i.second);
                         gcode->add_nl = true;
                     }
-                    // set the new options
-                    arm_solution->set_optional(options);
                 }
-
 
                 if(gcode->has_letter('S')) { // set delta segments per second, not saved by M500
                     this->delta_segments_per_second = gcode->get_value('S');
