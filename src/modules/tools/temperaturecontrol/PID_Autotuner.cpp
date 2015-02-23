@@ -46,6 +46,7 @@ void PID_Autotuner::begin(float target, StreamOutput *stream, int ncycles)
 
     temp_control->heater_pin.set(0);
     temp_control->target_temperature = 0.0;
+    temp_control->stop_temp_control = true;
 
     target_temperature = target;
     requested_cycles = ncycles;
@@ -77,6 +78,7 @@ void PID_Autotuner::abort()
 
     temp_control->target_temperature = 0;
     temp_control->heater_pin.set(0);
+    temp_control->stop_temp_control = false;
     temp_control = NULL;
 
     if (s)
@@ -260,6 +262,7 @@ void PID_Autotuner::finishUp()
     // and clean up
     temp_control->target_temperature = 0;
     temp_control->heater_pin.set(0);
+    temp_control->stop_temp_control = false;
     temp_control = NULL;
     s = NULL;
 
