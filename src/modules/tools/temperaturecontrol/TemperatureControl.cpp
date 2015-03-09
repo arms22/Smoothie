@@ -407,11 +407,17 @@ uint32_t TemperatureControl::thermistor_read_tick(uint32_t dummy)
         return 0;
     }
 
-    if (target_temperature > 0) {
-        if (isinf(temperature) || temperature < min_temp) {
-            this->min_temp_violated = true;
-            target_temperature = UNDEFINED;
-            heater_pin.set((this->o = 0));
+    if (stop_temp_control) {
+        ;
+    } else {
+        if (target_temperature > 0) {
+            if (isinf(temperature) || temperature < min_temp) {
+                this->min_temp_violated = true;
+                target_temperature = UNDEFINED;
+                heater_pin.set((this->o = 0));
+            } else {
+                pid_process(temperature);
+            }
         } else {
             heater_pin.set((this->o = 0));
         }
