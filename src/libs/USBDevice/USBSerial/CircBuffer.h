@@ -20,7 +20,7 @@
 #define CIRCBUFFER_H
 
 #include <stdlib.h>
-#include "IRQ.h"
+#include "sLPC17xx.h"
 #include "platform_memory.h"
 
 template <class T>
@@ -34,9 +34,9 @@ public:
     };
 
 	bool isFull() {
-		uint32_t primask = disableIRQ();
+		__disable_irq();
 		bool b= ((write + 1) % size == read);
-		restoreIRQ(primask);
+		__enable_irq();
 		return b;
     };
 
@@ -45,20 +45,20 @@ public:
     };
 
     void queue(T k) {
-		uint32_t primask = disableIRQ();
+		__disable_irq();
         if (isFull()) {
             read++;
             read %= size;
         }
         buf[write++] = k;
         write %= size;
-		restoreIRQ(primask);
+		__enable_irq();
     }
 
     uint16_t available() {
-		uint32_t primask = disableIRQ();
+		__disable_irq();
 		uint16_t i= (write >= read) ? write - read : (size - read) + write;
-		restoreIRQ(primask);
+		__enable_irq();
 		return i;
     };
     uint16_t free() {
