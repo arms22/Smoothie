@@ -43,9 +43,9 @@ template<class kind, int length>  int RingBuffer<kind, length>::capacity(){
 
 template<class kind, int length>  int RingBuffer<kind, length>::size(){
 	//return((this->tail>this->head)?length:0)+this->head-tail;
-	//__disable_irq();
+	__disable_irq();
 	int i = head - tail + ((tail > head)?length:0);
-	//__enable_irq();
+	__enable_irq();
 	return i;
 }
 
@@ -75,35 +75,33 @@ template<class kind, int length> kind* RingBuffer<kind, length>::get_tail_ref(){
 }
 
 template<class kind, int length> void RingBuffer<kind, length>::get(int index, kind &object){
-    // int j= 0;
-    // int k= this->tail;
-    // while (k != this->head){
-    //     if (j == index) break;
-    //     j++;
-    //     k= (k + 1) & (length - 1);
-    // }
+    int j= 0;
+    int k= this->tail;
+    while (k != this->head){
+        if (j == index) break;
+        j++;
+        k= (k + 1) & (length - 1);
+    }
     // TODO : this checks wether we are asked a value out of range
     //if (k == this->head){
     //    return NULL;
     //}
-    int k = (this->tail + index) & (length - 1);
     object = this->buffer[k];
 }
 
 
 template<class kind, int length> kind* RingBuffer<kind, length>::get_ref(int index){
-    // int j= 0;
-    // int k= this->tail;
-    // while (k != this->head){
-    //     if (j == index) break;
-    //     j++;
-    //     k= (k + 1) & (length - 1);
-    // }
-    // // TODO : this checks wether we are asked a value out of range
-    // if (k == this->head){
-    //     return 0;
-    // }
-    int k = (this->tail + index) & (length - 1);
+    int j= 0;
+    int k= this->tail;
+    while (k != this->head){
+        if (j == index) break;
+        j++;
+        k= (k + 1) & (length - 1);
+    }
+    // TODO : this checks wether we are asked a value out of range
+    if (k == this->head){
+        return 0;
+    }
     return &(this->buffer[k]);
 }
 
