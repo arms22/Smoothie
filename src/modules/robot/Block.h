@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <bitset>
+#include "ActuatorCoordinates.h"
 
 class Gcode;
 
@@ -19,7 +20,6 @@ class Block {
         void calculate_trapezoid( float entry_speed, float exit_speed );
         float estimate_acceleration_distance( float initial_rate, float target_rate, float acceleration );
         float intersection_distance(float initial_rate, float final_rate, float acceleration, float distance);
-        float get_duration_left(unsigned int already_taken_steps);
         float max_allowable_speed( float acceleration, float target_velocity, float distance);
 
         float reverse_pass(float exit_speed);
@@ -42,30 +42,30 @@ class Block {
 
         std::vector<Gcode> gcodes;
 
-        unsigned int   steps[3];           // Number of steps for each axis for this block
-        unsigned int   steps_event_count;  // Steps for the longest axis
-        unsigned int   nominal_rate;       // Nominal rate in steps per second
-        float          nominal_speed;      // Nominal speed in mm per second
-        float          millimeters;        // Distance for this move
-        float          entry_speed;
-        float          exit_speed;
-        float          rate_delta;         // Nomber of steps to add to the speed for each acceleration tick
-        unsigned int   initial_rate;       // Initial speed in steps per second
-        unsigned int   final_rate;         // Final speed in steps per second
-        unsigned int   accelerate_until;   // Stop accelerating after this number of steps
-        unsigned int   decelerate_after;   // Start decelerating after this number of steps
-        std::bitset<3> direction_bits;     // Direction for each axis in bit form, relative to the direction port's mask
+        std::array<uint32_t, k_max_actuators> steps; // Number of steps for each axis for this block
+        uint32_t steps_event_count;  // Steps for the longest axis
+        uint32_t nominal_rate;       // Nominal rate in steps per second
+        float nominal_speed;      // Nominal speed in mm per second
+        float millimeters;        // Distance for this move
+        float entry_speed;
+        float exit_speed;
+        float rate_delta;         // Number of steps to add to the speed for each acceleration tick
+        float acceleration;       // the acceleratoin for this block
+        uint32_t initial_rate;       // Initial speed in steps per second
+        uint32_t final_rate;         // Final speed in steps per second
+        uint32_t accelerate_until;   // Stop accelerating after this number of steps
+        uint32_t decelerate_after;   // Start decelerating after this number of steps
 
+        float max_entry_speed;
+
+        int16_t times_taken;    // A block can be "taken" by any number of modules, and the next block is not moved to until all the modules have "released" it. This value serves as a tracker.
+
+        std::bitset<k_max_actuators> direction_bits;     // Direction for each axis in bit form, relative to the direction port's mask
         struct {
             bool recalculate_flag:1;             // Planner flag to recalculate trapezoids on entry junction
             bool nominal_length_flag:1;          // Planner flag for nominal speed always reached
             bool is_ready:1;
         };
-
-        float max_entry_speed;
-
-        short times_taken;    // A block can be "taken" by any number of modules, and the next block is not moved to until all the modules have "released" it. This value serves as a tracker.
-
 };
 
 
