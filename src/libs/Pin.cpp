@@ -3,7 +3,9 @@
 
 // mbed libraries for hardware pwm
 #include "PwmOut.h"
+#include "InterruptIn.h"
 #include "PinNames.h"
+#include "port_api.h"
 
 Pin::Pin(){
     this->inverting= false;
@@ -14,6 +16,11 @@ Pin::Pin(){
 
 // Make a new pin object from a string
 Pin* Pin::from_string(std::string value){
+    if(value == "nc") {
+        this->valid= false;
+        return this; // optimize the nc case
+    }
+
     LPC_GPIO_TypeDef* gpios[5] ={LPC_GPIO0,LPC_GPIO1,LPC_GPIO2,LPC_GPIO3,LPC_GPIO4};
 
     // cs is the current position in the string
@@ -183,4 +190,21 @@ mbed::PwmOut* Pin::hardware_pwm()
         if (pin == 26) { return new mbed::PwmOut(P3_26); }
     }
     return nullptr;
+}
+
+mbed::InterruptIn* Pin::interrupt_pin()
+{
+    if(!this->valid) return nullptr;
+
+    // set as input
+    as_input();
+
+    if (port_number == 0 || port_number == 2) {
+        PinName pinname = port_pin((PortName)port_number, pin);
+        return new mbed::InterruptIn(pinname);
+
+    }else{
+        this->valid= false;
+        return nullptr;
+    }
 }

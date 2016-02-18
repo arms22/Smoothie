@@ -20,7 +20,6 @@
 #include "screens/MainMenuScreen.h"
 #include "SlowTicker.h"
 #include "Gcode.h"
-#include "Pauser.h"
 #include "TemperatureControlPublicAccess.h"
 #include "ModifyValuesScreen.h"
 #include "PublicDataRequest.h"
@@ -64,6 +63,7 @@
 
 #define hotend_temp_checksum CHECKSUM("hotend_temperature")
 #define bed_temp_checksum    CHECKSUM("bed_temperature")
+#define panel_display_message_checksum CHECKSUM("display_message")
 
 Panel* Panel::instance= nullptr;
 
@@ -83,7 +83,6 @@ Panel::Panel()
     this->sd= nullptr;
     this->extmounter= nullptr;
     this->external_sd_enable= false;
-    this->halted= false;
     strcpy(this->playing_file, "Playing file");
 }
 
@@ -165,7 +164,6 @@ void Panel::on_module_loaded()
     this->down_button.up_attach(  this, &Panel::on_down );
     this->click_button.up_attach( this, &Panel::on_select );
     this->back_button.up_attach(  this, &Panel::on_back );
-    this->pause_button.up_attach( this, &Panel::on_pause );
 
 
     //setting longpress_delay
@@ -189,8 +187,7 @@ void Panel::on_module_loaded()
     // Register for events
     this->register_for_event(ON_IDLE);
     this->register_for_event(ON_MAIN_LOOP);
-    this->register_for_event(ON_GCODE_RECEIVED);
-    this->register_for_event(ON_HALT);
+    this->register_for_event(ON_SET_PUBLIC_DATA);
 
     // Refresh timer
     THEKERNEL->slow_ticker->attach( 20, this, &Panel::refresh_tick );
@@ -261,15 +258,19 @@ uint32_t Panel::encoder_tick(uint32_t dummy)
     return 0;
 }
 
-void Panel::on_gcode_received(void *argument)
+void Panel::on_set_public_data(void *argument)
 {
-    Gcode *gcode = static_cast<Gcode *>(argument);
-    if ( gcode->has_m) {
-        if ( gcode->m == 117 ) { // set LCD message
-            this->message = get_arguments(gcode->get_command());
-            if (this->message.size() > 20) this->message = this->message.substr(0, 20);
-            gcode->mark_as_taken();
-        }
+     PublicDataRequest *pdr = static_cast<PublicDataRequest *>(argument);
+
+    if(!pdr->starts_with(panel_checksum)) return;
+
+    if(!pdr->second_element_is(panel_display_message_checksum)) return;
+
+    string *s = static_cast<string *>(pdr->get_data_ptr());
+    if (s->size() > 20) {
+        this->message = s->substr(0, 20);
+    } else {
+        this->message= *s;
     }
 }
 
@@ -369,7 +370,6 @@ void Panel::on_idle(void *argument)
         this->down_button.check_signal(but & BUTTON_DOWN);
         this->back_button.check_signal(but & BUTTON_LEFT);
         this->click_button.check_signal(but & BUTTON_SELECT);
-        this->pause_button.check_signal(but & BUTTON_PAUSE);
     }
 
     // If we are in menu mode and the position has changed
@@ -427,16 +427,6 @@ uint32_t Panel::on_select(uint32_t dummy)
     this->click_changed = true;
     this->idle_time = 0;
     lcd->buzz(60, 300); // 50ms 300Hz
-    return 0;
-}
-
-uint32_t Panel::on_pause(uint32_t dummy)
-{
-    if (!THEKERNEL->pauser->paused()) {
-        THEKERNEL->pauser->take();
-    } else {
-        THEKERNEL->pauser->release();
-    }
     return 0;
 }
 
@@ -670,9 +660,4 @@ void Panel::on_second_tick(void *arg)
     }else{
         // TODO for panels with no sd card detect we need to poll to see if card is inserted - or not
     }
-}
-
-void Panel::on_halt(void *arg)
-{
-    halted= (arg == nullptr);
 }

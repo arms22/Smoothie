@@ -30,7 +30,7 @@ private:
 
     void setAdjustFunction(bool);
     bool doProbing(StreamOutput *stream);
-    void normalize_grid();
+    void normalize_grid_2home();
 
     bool loadGrid(std::string args);
     bool saveGrid(std::string args);
@@ -42,16 +42,24 @@ private:
     uint16_t numRows;
     uint16_t numCols;
     float *pData;
-
     float slow_rate;
     float bed_x;
     float bed_y;
     float bed_z;
+    float probe_x;
+    float probe_y;
+    float probe_z;
+    float cal_offset_x;
+    float cal_offset_y;
     float bed_div_x;
     float bed_div_y;
     float cal[3];            // calibration positions for manual leveling
     struct {
+        char home_before_probe:4;
         bool in_cal:1;
+        bool center_zero:1;
+        bool circular_bed:1;
+        bool wait_for_probe:1;
     };
 };
 

@@ -38,7 +38,6 @@ void StepperMotor::init()
     // register this motor with the step ticker, and get its index in that array and bit position
     this->index= THEKERNEL->step_ticker->register_motor(this);
     this->moving = false;
-    this->paused = false;
     this->fx_counter = 0;
     this->fx_ticks_per_step = 0xFFFFF000UL; // some big number so we don't start stepping before it is set
     this->stepped = 0;
@@ -94,6 +93,13 @@ void StepperMotor::step()
     }
 }
 
+void StepperMotor::force_finish_move()
+{
+    this->is_move_finished = true;
+    THEKERNEL->step_ticker->a_move_finished= true;
+    this->last_step_tick= THEKERNEL->step_ticker->get_tick_cnt(); // remember when last step was
+    this->steps_to_move= this->stepped;
+}
 
 // If the move is finished, the StepTicker will call this ( because we asked it to in tick() )
 void StepperMotor::signal_move_finished()
@@ -115,10 +121,10 @@ void StepperMotor::signal_move_finished()
     this->is_move_finished = false;
 }
 
-// This is just a way not to check for ( !this->moving || this->paused || this->fx_ticks_per_step == 0 ) at every tick()
+// This is just a way not to check for ( !this->moving || this->fx_ticks_per_step == 0 ) at every tick()
 void StepperMotor::update_exit_tick()
 {
-    if( !this->moving || this->paused || this->steps_to_move == 0 ) {
+    if( !this->moving || this->steps_to_move == 0 ) {
         // No more ticks will be recieved and no more events from StepTicker
         THEKERNEL->step_ticker->remove_motor_from_active_list(this);
     } else {
@@ -188,37 +194,22 @@ StepperMotor* StepperMotor::set_speed( float speed )
     return this;
 }
 
-// Pause this stepper motor
-void StepperMotor::pause()
-{
-    this->paused = true;
-    this->update_exit_tick();
-}
-
-// Unpause this stepper motor
-void StepperMotor::unpause()
-{
-    this->paused = false;
-    this->update_exit_tick();
-}
-
-
 void StepperMotor::change_steps_per_mm(float new_steps)
 {
     steps_per_mm = new_steps;
-    last_milestone_steps = lround(last_milestone_mm * steps_per_mm);
+    last_milestone_steps = lroundf(last_milestone_mm * steps_per_mm);
     current_position_steps = last_milestone_steps;
 }
 
 void StepperMotor::change_last_milestone(float new_milestone)
 {
     last_milestone_mm = new_milestone;
-    last_milestone_steps = lround(last_milestone_mm * steps_per_mm);
+    last_milestone_steps = lroundf(last_milestone_mm * steps_per_mm);
     current_position_steps = last_milestone_steps;
 }
 
 int  StepperMotor::steps_to_target(float target)
 {
-    int target_steps = lround(target * steps_per_mm);
+    int target_steps = lroundf(target * steps_per_mm);
     return target_steps - last_milestone_steps;
 }
