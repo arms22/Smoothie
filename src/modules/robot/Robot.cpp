@@ -907,7 +907,7 @@ bool Robot::append_line(Gcode *gcode, const float target[], float rate_mm_s )
     // We cut the line into smaller segments. This is only needed on a cartesian robot for zgrid, but always necessary for robots with rotational axes like Deltas.
     // In delta robots either mm_per_line_segment can be used OR delta_segments_per_second
     // The latter is more efficient and avoids splitting fast long lines into very small segments, like initial z move to 0, it is what Johanns Marlin delta port does
-    uint16_t segments;
+    uint16_t segments = 1;
 
     if((fabsf(deltas[X_AXIS]) > 0.001f) ||
         (fabsf(deltas[Y_AXIS]) > 0.001f)) {
